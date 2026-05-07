@@ -3,7 +3,7 @@ dist/
 build/
 .env
 *.log
-
+observations/Lib
 
 # Python virtual environments
 .venv/
