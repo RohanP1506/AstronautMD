@@ -1,5 +1,5 @@
 import numpy as np
-import pandas as pd
+import pandas as pdA
 
 # Clean dataframe for easy studies
 def organize_df(df):
@@ -47,7 +47,7 @@ def process_cytokine_df(df, name):
     
     # Score
     df['marker_score'] = df['log2fc'].apply(score_log2fc)
-    
+
     # Tag which dataset this came from
     df['source'] = name
     
