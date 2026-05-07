@@ -53,26 +53,29 @@ def process_cytokine_df(df, name):
     
     return df
 
+# Datasets straight from open-source
 immune_eve = organize_df(pd.read_csv('https://osdr.nasa.gov/geode-py/ws/studies/OSD-575/download?source=datamanager&file=LSDS-8_Multiplex_serum_immune_EvePanel_TRANSFORMED.csv', index_col=0).transpose())
 immune_alamar = organize_df(pd.read_csv('https://osdr.nasa.gov/geode-py/ws/studies/OSD-575/download?source=datamanager&file=LSDS-8_Multiplex_serum.immune.AlamarPanel_TRANSFORMED.csv', index_col=0).transpose())
 cardio_eve = organize_df(pd.read_csv('https://osdr.nasa.gov/geode-py/ws/studies/OSD-575/download?source=datamanager&file=LSDS-8_Multiplex_serum_cardiovascular_EvePanel_TRANSFORMED.csv', index_col=0).transpose())
 
+# Clean up datasets
 immune_eve_long = process_cytokine_df(immune_eve, 'immune_eve')
 immune_alamar_long = process_cytokine_df(immune_alamar, 'immune_alamar')
 cardio_eve_long = process_cytokine_df(cardio_eve, 'cardio_eve')
 
-# Make observations on significant changes in concentration before and during/after flight
+# Make observations on significant changes in concentration before and after flight
 postflight = immune_eve_long[immune_eve_long['timepoint'].str.startswith('R+')]
 significant = postflight[postflight['marker_score'] >= 1]
 
-# Group datasets by astronaut
-astro1 = significant[significant['astronaut'] == 'C001']
-astro2 = significant[significant['astronaut'] == 'C002']
-astro3 = significant[significant['astronaut'] == 'C003']
-astro4 = significant[significant['astronaut'] == 'C004']
-astronauts = [astro1, astro2, astro3, astro4]
+# Make a dataframe of the persistence of significant changes in certain markers over timepoints
+persistence = significant.groupby(['astronaut', 'marker']).agg(
+    times_significant = ('marker_score', 'count'), # count rows
+    max_score = ('marker_score', 'max'), # highest score
+    mean_log2fc = ('log2fc', 'mean') # average log2fc
+).reset_index()
 
-# go through list of astronauts
-# go through each marker and count how many times its significant through each timepoint after flight
-    # If once then not significant, twice maybe, thrice probably
-
+# Rank persistency between all astronauts
+for astronaut, data in persistence.groupby('astronaut'):
+    print(f'\n=== {astronaut} ===')
+    ranked = data.sort_values('times_significant', ascending=False)
+    print(ranked)
