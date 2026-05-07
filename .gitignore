@@ -3,6 +3,15 @@ dist/
 build/
 .env
 *.log
+
+
+# Python virtual environments
+.venv/
+env/
+Lib/
 Scripts/
+pyvenv.cfg
+
+# Python bytecode
 __pycache__/
 *.pyc
