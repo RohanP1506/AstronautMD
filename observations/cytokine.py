@@ -58,9 +58,21 @@ immune_alamar = organize_df(pd.read_csv('https://osdr.nasa.gov/geode-py/ws/studi
 cardio_eve = organize_df(pd.read_csv('https://osdr.nasa.gov/geode-py/ws/studies/OSD-575/download?source=datamanager&file=LSDS-8_Multiplex_serum_cardiovascular_EvePanel_TRANSFORMED.csv', index_col=0).transpose())
 
 immune_eve_long = process_cytokine_df(immune_eve, 'immune_eve')
-# immune_alamar_long = process_cytokine_df(immune_alamar, 'immune_alamar')
-# cardio_eve_long = ProcessLookupError(cardio_eve, 'cardio_eve')
+immune_alamar_long = process_cytokine_df(immune_alamar, 'immune_alamar')
+cardio_eve_long = process_cytokine_df(cardio_eve, 'cardio_eve')
 
-print(immune_eve_long.columns)
-# print(immune_alamar_long)
-# print(cardio_eve_long)
+# Make observations on significant changes in concentration before and during/after flight
+postflight = immune_eve_long[immune_eve_long['timepoint'].str.startswith('R+')]
+significant = postflight[postflight['marker_score'] >= 1]
+
+# Group datasets by astronaut
+astro1 = significant[significant['astronaut'] == 'C001']
+astro2 = significant[significant['astronaut'] == 'C002']
+astro3 = significant[significant['astronaut'] == 'C003']
+astro4 = significant[significant['astronaut'] == 'C004']
+astronauts = [astro1, astro2, astro3, astro4]
+
+# go through list of astronauts
+# go through each marker and count how many times its significant through each timepoint after flight
+    # If once then not significant, twice maybe, thrice probably
+
