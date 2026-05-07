@@ -1,6 +1,5 @@
 import numpy as np
-import pandas as pdA
-
+import pandas as pd
 # Clean dataframe for easy studies
 def organize_df(df):
     # Modify dataframe to focus only on concentrations
