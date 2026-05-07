@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from urine_dataframes import *
+from composite_score import *
 
 
 # 2. Load the OSD-656 Urine Dataset
@@ -30,3 +31,24 @@ for astronaut, data in persistence.groupby('astronaut'):
     # Rank by how many post-flight timepoints remained significant
     ranked = data.sort_values(['times_significant', 'max_score'], ascending=False)
     print(ranked.head(10))
+
+# 4. Generate Composite Scores
+composite_scores = calculate_composite_scores(urine_processed, DOMAIN_MAP)
+
+# 5. Look at the specific domains for all astronauts
+print("\n=== DOMAIN COMPOSITE SCORES (0-5 SCALE) ===")
+# Pivot for easier viewing: Columns are domains, rows are astronaut/timepoint
+final_view = composite_scores.pivot_table(
+    index=['astronaut', 'timepoint'], 
+    columns='domain', 
+    values='composite_score'
+).reset_index()
+
+print(final_view.sort_values(['astronaut', 'timepoint']))
+
+# Check how many post-flight (R+) timepoints had a composite score > 2.0
+postflight_domains = composite_scores[composite_scores['timepoint'].str.startswith('R+')]
+domain_persistence = postflight_domains[postflight_domains['composite_score'] >= 2.0]
+
+print("\n--- Persistent Domain Elevations (R+ Timepoints) ---")
+print(domain_persistence)
