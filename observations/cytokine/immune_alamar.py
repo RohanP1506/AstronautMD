@@ -1,5 +1,3 @@
-import numpy as np
-import pandas as pd
 from cytokine_dataframe import *
 
 # Dataset straight from open-source

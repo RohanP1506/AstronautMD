@@ -1,5 +1,3 @@
-import numpy as np
-import pandas as pd
 from cytokine_dataframe import *
 
 # Dataset straight from open-source
@@ -19,8 +17,43 @@ persistence = significant.groupby(['astronaut', 'marker']).agg(
     mean_log2fc = ('log2fc', 'mean') # average log2fc
 ).reset_index()
 
-# # Rank persistency between all astronauts
-# for astronaut, data in persistence.groupby('astronaut'):
-#     print(f'\n=== {astronaut} ===')
-#     ranked = data.sort_values('times_significant', ascending=False)
-#     print(ranked)
+### BEGIN CLASSIFICATION ###
+
+immune_regulation_markers = [
+    'il_2_concentration_picogram_per_milliliter',    # T-cell proliferation
+    'il_4_concentration_picogram_per_milliliter',    # Th2, B-cell activation
+    'il_10_concentration_picogram_per_milliliter',   # anti-inflammatory, regulatory
+    'il_13_concentration_picogram_per_milliliter',   # Th2 effector
+    'il_15_concentration_picogram_per_milliliter',   # NK/T-cell homeostasis
+    'il_17a_concentration_picogram_per_milliliter',  # Th17 axis
+    'il_1ra_concentration_picogram_per_milliliter',  # IL-1 antagonist, regulatory brake
+    'il_21_concentration_picogram_per_milliliter',   # T follicular helper
+    'il_27_concentration_picogram_per_milliliter',   # Treg induction
+    'tnfb_concentration_picogram_per_milliliter',    # immunosuppressive (if this is TGF-α)
+    'ifny_concentration_picogram_per_milliliter',    # Th1 effector
+]
+
+reg_df = immune_eve_long[
+    immune_eve_long['timepoint'].str.startswith('R+') &
+    immune_eve_long['marker'].isin(immune_regulation_markers)
+]
+
+composite = (
+    reg_df.groupby(['astronaut', 'timepoint'])['log2fc']
+    .mean()
+    .reset_index()
+    .rename(columns={'log2fc': 'immune_regulation_score'})
+)
+composite['timepoint_num'] = composite['timepoint'].str.extract(r'R\+(\d+)').astype(int)
+composite = composite.sort_values(['astronaut', 'timepoint_num'])
+
+overall_scores = (
+    composite
+    .groupby('astronaut')['immune_regulation_score']
+    .mean()
+    .reset_index()
+    .rename(columns={'immune_regulation_score': 'overall_immune_regulation_score'})
+    .sort_values('overall_immune_regulation_score', ascending=False)
+)
+
+print(overall_scores)
