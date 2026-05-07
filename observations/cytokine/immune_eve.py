@@ -39,10 +39,10 @@ reg_df = immune_eve_long[
 ]
 
 composite = (
-    reg_df.groupby(['astronaut', 'timepoint'])['log2fc']
+    reg_df.groupby(['astronaut', 'timepoint'])['marker_score'] 
     .mean()
     .reset_index()
-    .rename(columns={'log2fc': 'immune_regulation_score'})
+    .rename(columns={'marker_score': 'immune_regulation_score'})
 )
 composite['timepoint_num'] = composite['timepoint'].str.extract(r'R\+(\d+)').astype(int)
 composite = composite.sort_values(['astronaut', 'timepoint_num'])
