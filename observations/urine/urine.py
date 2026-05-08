@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from urine_dataframes import *
 from composite_score import *
+from urine_viz import generate_all_figures
 
 
 # 2. Load the OSD-656 Urine Dataset
@@ -52,3 +53,6 @@ domain_persistence = postflight_domains[postflight_domains['composite_score'] >=
 
 print("\n--- Persistent Domain Elevations (R+ Timepoints) ---")
 print(domain_persistence)
+
+
+generate_all_figures(urine_processed, composite_scores, output_dir='figures')

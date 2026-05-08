@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 
 def organize_urine_df(df):
     conc = df.reset_index()
