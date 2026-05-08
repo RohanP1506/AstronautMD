@@ -17,6 +17,7 @@ def sort_timepoints(timepoints):
 def plot_log2fc_heatmap(processed_df, title_suffix='OSD-575 EVE Panel',
                         output_path='fig_log2fc_heatmap.png', min_abs_fc=0.5):
     df = processed_df.copy()
+    df = df[~df['timepoint'].str.startswith('L-')]
 
     # FIXED: full name stripping instead of token extraction — avoids collisions
     df['marker_short'] = (
