@@ -1,22 +1,21 @@
 from cytokine_dataframe import *
 
 # Dataset straight from open-source
-# immune_eve = organize_df(pd.read_csv('https://osdr.nasa.gov/geode-py/ws/studies/OSD-575/download?source=datamanager&file=LSDS-8_Multiplex_serum_immune_EvePanel_TRANSFORMED.csv', index_col=0).transpose())
-immune_eve = organize_df(pd.read_csv('cytokine\LSDS-8_Multiplex_serum_immune_EvePanel_TRANSFORMED.csv', index_col=0).transpose())
+immune_eve = organize_df(pd.read_csv('https://osdr.nasa.gov/geode-py/ws/studies/OSD-575/download?source=datamanager&file=LSDS-8_Multiplex_serum_immune_EvePanel_TRANSFORMED.csv', index_col=0).transpose())
 
 # Clean up dataset
 immune_eve_long = process_cytokine_df(immune_eve, 'immune_eve')
 
-# Make observations on significant changes in concentration before and after flight
-postflight = immune_eve_long[immune_eve_long['timepoint'].str.startswith('R+')]
-significant = postflight[postflight['marker_score'].abs() >= 2]
+# # Make observations on significant changes in concentration before and after flight
+# postflight = immune_eve_long[immune_eve_long['timepoint'].str.startswith('R+')]
+# significant = postflight[postflight['marker_score'].abs() >= 2]
 
-# Make a dataframe of the persistence of significant changes in certain markers over timepoints
-persistence = significant.groupby(['astronaut', 'marker']).agg(
-    times_significant = ('marker_score', 'count'), # count rows
-    max_score = ('marker_score', 'max'), # highest score
-    mean_log2fc = ('log2fc', 'mean') # average log2fc
-).reset_index()
+# # Make a dataframe of the persistence of significant changes in certain markers over timepoints
+# persistence = significant.groupby(['astronaut', 'marker']).agg(
+#     times_significant = ('marker_score', 'count'), # count rows
+#     max_score = ('marker_score', 'max'), # highest score
+#     mean_log2fc = ('log2fc', 'mean') # average log2fc
+# ).reset_index()
 
 ### BEGIN CLASSIFICATION ###
 
@@ -48,8 +47,10 @@ markers = {
     'ip_10_concentration_picogram_per_milliliter'    # CXCL10, IFN-driven inflammation
 ]}
 
-print("Immune Regulation Score:")
-immune_reg_composite, immune_reg_overall_score = score(immune_eve_long, markers['immune_regulation'])
-print("\nInflammation Score:")
-inflammation_composite, imflammation_overall_score = score(immune_eve_long, markers['inflammation'])
-to_plot = [immune_reg_composite, inflammation_composite]
+# print("Immune Regulation Score:")
+# immune_reg_composite, immune_reg_overall_score = score(immune_eve_long, markers['immune_regulation'])
+# print("\nInflammation Score:")
+# inflammation_composite, imflammation_overall_score = score(immune_eve_long, markers['inflammation'])
+# to_plot = [immune_reg_composite, inflammation_composite]
+immune_reg_tp, immune_reg_overall = score(immune_eve_long, markers['immune_regulation'], 'Immune Regulation')
+inflammation_tp, inflammation_overall = score(immune_eve_long, markers['inflammation'], 'Inflammation')
