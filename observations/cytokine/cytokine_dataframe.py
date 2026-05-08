@@ -1,21 +1,34 @@
 import numpy as np
 import pandas as pd
- 
+
 # =============================================================================
 # DATA LOADING & PROCESSING
 # =============================================================================
- 
+
 def organize_df(df):
-    """Reshape raw NASA CSV into long format with marker, astronaut, timepoint."""
+    """
+    Reshape a transposed NASA multiplex CSV into long format.
+    Input:  transposed CSV where rows = samples, columns = markers
+    Output: long dataframe with columns: marker, sample_id, concentration,
+            astronaut, timepoint
+    Only keeps concentration columns (drops percent columns).
+    """
     conc = df.reset_index()
     conc = conc[conc['index'].str.contains('concentration')]
     conc = conc.rename(columns={'index': 'marker'})
     melted_df = conc.melt(id_vars='marker', var_name='sample_id', value_name='concentration')
     melted_df[['astronaut', 'timepoint']] = melted_df['sample_id'].str.extract(r'(C\d+)_serum_(.*)')
-    return melted_df
- 
+    melted_df = melted_df.dropna(subset=['astronaut', 'timepoint'])
+    melted_df['concentration'] = pd.to_numeric(melted_df['concentration'], errors='coerce')
+    melted_df = melted_df.dropna(subset=['concentration'])
+    return melted_df.reset_index(drop=True)
+
+
 def compute_baseline(df):
-    """Average all preflight (L-) timepoints per astronaut per marker."""
+    """
+    Compute each astronaut's personal baseline per marker as the mean
+    concentration across all preflight timepoints (L-92, L-44, L-3).
+    """
     preflight = df[df['timepoint'].str.startswith('L-')]
     return (
         preflight
@@ -24,143 +37,202 @@ def compute_baseline(df):
         .reset_index()
         .rename(columns={'concentration': 'baseline_mean'})
     )
- 
+
+
 def process_cytokine_df(df, name):
-    """Compute personal baseline and log2FC for every marker. No scoring yet."""
+    """
+    Merge baseline into the dataframe and compute log2FC per marker per
+    timepoint relative to that astronaut's personal preflight baseline.
+    No scoring is done here — scoring happens in score().
+    """
     baseline = compute_baseline(df)
     df = df.merge(baseline, on=['astronaut', 'marker'])
- 
-    # Guard against log2(0)
+
+    # Guard against log2(0) or negative concentrations
     df = df[(df['concentration'] > 0) & (df['baseline_mean'] > 0)]
- 
+
     df['log2fc'] = np.log2(df['concentration'] / df['baseline_mean'])
     df['source'] = name
-    return df
- 
+    return df.reset_index(drop=True)
+
+
 # =============================================================================
-# SCORING
-# Significance threshold: |log2FC| >= 1.0 (2x fold-change)
-# Domain score at each timepoint = fraction of significant markers
-# Overall domain score = mean of timepoint fractions
-# Risk tier = fraction binned to 1-5
+# SCORING CONFIGURATION
+#
+# Methodology:
+#   - Significance threshold: |log2FC| >= 1.0  (2x fold-change)
+#   - Domain score at each timepoint = weighted fraction of significant markers
+#       weighted_fraction = sum(weights of significant markers) /
+#                           sum(weights of all domain markers)
+#   - Marker weights: 1.0 = primary contributor, 0.5 = secondary contributor
+#   - Overall domain score = timepoint-weighted mean of timepoint fractions
+#   - Timepoint weights: R+1 down-weighted to 0.5 (reentry stress confound);
+#       R+45, R+82, R+194 weighted 1.0
+#   - Risk tier: overall fraction binned to 1-5 scale
 # =============================================================================
- 
-SIGNIFICANCE_THRESHOLD = 1.0  # |log2FC| >= 1.0 = 2x fold-change
- 
-def fraction_to_risk(fraction):
+
+SIGNIFICANCE_THRESHOLD = 1.0   # |log2FC| >= 1.0 = 2x fold-change
+
+TIMEPOINT_WEIGHTS = {
+    'R+1':   0.5,   # down-weighted — physical reentry stress is a confound
+    'R+45':  1.0,
+    'R+82':  1.0,
+    'R+194': 1.0,
+}
+
+# Marker weights are set per-panel by calling set_marker_weights()
+_MARKER_WEIGHTS = {}
+
+def set_marker_weights(weights):
     """
-    Convert fraction of significant markers to a 1-5 risk score.
-    Thresholds represent intuitive quartile-like cutoffs:
-      1 = minimal  — <10% of domain markers affected
-      2 = mild     — 10-25% affected
-      3 = moderate — 25-50% affected
-      4 = significant — 50-75% affected
-      5 = severe   — >75% of domain markers affected
+    Register marker importance weights before calling score().
+    weights: dict mapping full marker name -> float (1.0 or 0.5)
+    Any marker not in this dict defaults to 0.5.
     """
-    if fraction < 0.10:   return 1
-    elif fraction < 0.25: return 2
-    elif fraction < 0.50: return 3
-    elif fraction < 0.75: return 4
-    else:                 return 5
- 
+    global _MARKER_WEIGHTS
+    _MARKER_WEIGHTS = weights
+
+
+def _fraction_to_risk(fraction):
+    """
+    Bin a weighted fraction of significant markers into a 1-5 risk score.
+      1 = minimal    < 10% of weighted markers affected
+      2 = mild       10-25% affected
+      3 = moderate   25-50% affected
+      4 = significant 50-75% affected
+      5 = severe     > 75% affected
+    """
+    if fraction < 0.10:    return 1
+    elif fraction < 0.25:  return 2
+    elif fraction < 0.50:  return 3
+    elif fraction < 0.75:  return 4
+    else:                  return 5
+
+
+def _clean_name(marker):
+    """
+    Strip unit suffix for readable output.
+    e.g. 'il_6_concentration_picogram_per_milliliter' -> 'IL_6'
+    """
+    return marker.split('_concentration')[0].upper()
+
+
+# =============================================================================
+# MAIN SCORING FUNCTION
+# =============================================================================
+
 def score(df, markers, domain_name=''):
     """
-    Score a biological domain for each astronaut.
- 
-    For each postflight timepoint:
-      - Count how many domain markers have |log2FC| >= threshold (significant)
-      - Compute fraction = significant / total domain markers
- 
-    Overall score = mean fraction across all postflight timepoints.
-    Risk score = fraction binned to 1-5.
- 
-    Also prints:
-      - Per-timepoint fraction table
-      - Which markers were significant and their direction
-      - Overall risk scores
- 
+    Score a biological domain for each astronaut using postflight data.
+
     Parameters
     ----------
-    df      : processed dataframe with log2fc column
-    markers : list of marker names belonging to this domain
-    domain_name : label for printouts
- 
+    df          : processed dataframe from process_cytokine_df() with log2fc column
+    markers     : list of full marker names belonging to this domain
+    domain_name : label used in printouts
+
     Returns
     -------
-    timepoint_df  : per-astronaut × timepoint fraction and significant markers
-    overall_df    : per-astronaut overall score and risk tier
+    timepoint_df : per astronaut x timepoint summary with fraction, n_sig,
+                   n_total, up_scores, down_scores
+    overall_df   : per astronaut overall weighted fraction and 1-5 risk score
     """
-    # Filter to postflight only and domain markers only
+    # Filter to postflight timepoints and domain markers only
     domain_df = df[
         df['timepoint'].str.startswith('R+') &
         df['marker'].isin(markers)
     ].copy()
- 
-    total_markers = len(markers)
- 
-    # Flag significant markers
-    domain_df['significant'] = domain_df['log2fc'].abs() >= SIGNIFICANCE_THRESHOLD
-    domain_df['direction'] = np.where(
-        domain_df['log2fc'] > 0, 'up',
-        np.where(domain_df['log2fc'] < 0, 'down', 'stable')
-    )
- 
-    # Per timepoint: fraction significant + list of significant markers
+
+    if domain_df.empty:
+        print(f"⚠️  No data found for domain '{domain_name}'. Check marker names.")
+        return pd.DataFrame(), pd.DataFrame()
+
+    # Flag significance and direction
+    domain_df['significant']    = domain_df['log2fc'].abs() >= SIGNIFICANCE_THRESHOLD
+    domain_df['direction']      = np.where(domain_df['log2fc'] > 0, 'up', 'down')
+    domain_df['marker_weight']  = domain_df['marker'].map(_MARKER_WEIGHTS).fillna(0.5)
+
+    # ── Per-timepoint summary ──────────────────────────────────────────────────
     def summarize_timepoint(group):
-        sig = group[group['significant']]
+        sig          = group[group['significant']]
+        total_weight = group['marker_weight'].sum()
+        weighted_sig = sig['marker_weight'].sum()
+        fraction     = weighted_sig / total_weight if total_weight > 0 else 0.0
+
+        up_df   = sig[sig['direction'] == 'up'][['marker', 'log2fc']].copy()
+        down_df = sig[sig['direction'] == 'down'][['marker', 'log2fc']].copy()
+        up_df['marker']   = up_df['marker'].apply(_clean_name)
+        down_df['marker'] = down_df['marker'].apply(_clean_name)
+
         return pd.Series({
-            'n_significant':  len(sig),
-            'n_total':        total_markers,
-            'fraction':       len(sig) / total_markers,
-            'up_markers':     ', '.join(sig[sig['direction'] == 'up']['marker'].tolist()),
-            'down_markers':   ', '.join(sig[sig['direction'] == 'down']['marker'].tolist()),
+            'fraction':    round(fraction, 4),
+            'n_sig':       len(sig),
+            'n_total':     len(group),
+            'up_scores':   dict(zip(up_df['marker'],   up_df['log2fc'].round(2))),
+            'down_scores': dict(zip(down_df['marker'], down_df['log2fc'].round(2))),
         })
- 
+
     timepoint_df = (
         domain_df
         .groupby(['astronaut', 'timepoint'])
         .apply(summarize_timepoint)
         .reset_index()
     )
- 
-    # Sort timepoints numerically
-    timepoint_df['timepoint_num'] = timepoint_df['timepoint'].str.extract(r'R\+(\d+)').astype(int)
-    timepoint_df = timepoint_df.sort_values(['astronaut', 'timepoint_num']).drop(columns='timepoint_num')
- 
-    # Overall score: mean fraction across timepoints → risk tier
+
+    # Sort timepoints numerically (R+1, R+45, R+82, R+194)
+    timepoint_df['_tp_num']             = timepoint_df['timepoint'].str.extract(r'R\+(\d+)').astype(int)
+    timepoint_df['timepoint_weight']    = timepoint_df['timepoint'].map(TIMEPOINT_WEIGHTS).fillna(1.0)
+    timepoint_df['weighted_contribution'] = timepoint_df['fraction'] * timepoint_df['timepoint_weight']
+    timepoint_df = timepoint_df.sort_values(['astronaut', '_tp_num']).drop(columns='_tp_num')
+
+    # ── Overall score per astronaut ────────────────────────────────────────────
+    def overall_score(g):
+        return pd.Series({
+            'overall_fraction': g['weighted_contribution'].sum() / g['timepoint_weight'].sum()
+        })
+
     overall_df = (
         timepoint_df
-        .groupby('astronaut')['fraction']
-        .mean()
+        .groupby('astronaut')
+        .apply(overall_score)
         .reset_index()
-        .rename(columns={'fraction': 'overall_fraction'})
     )
-    overall_df['risk_score'] = overall_df['overall_fraction'].apply(fraction_to_risk)
-    overall_df = overall_df.sort_values('risk_score', ascending=False)
- 
-    # --- Printout ---
-    print(f"\n{'='*60}")
-    print(f"  {domain_name} (threshold: |log2FC| >= {SIGNIFICANCE_THRESHOLD})")
-    print(f"{'='*60}")
- 
-    print("\nPer-timepoint fraction of significant markers:")
-    pivot = timepoint_df.pivot_table(
-        index='astronaut', columns='timepoint', values='fraction'
-    )
-    ordered_cols = sorted(pivot.columns, key=lambda x: int(x.replace('R+', '')))
-    print(pivot[ordered_cols].round(2).to_string())
- 
-    print("\nSignificant markers per astronaut per timepoint:")
-    for _, row in timepoint_df.iterrows():
-        up   = row['up_markers']   or 'none'
-        down = row['down_markers'] or 'none'
-        print(f"  {row['astronaut']} {row['timepoint']}: "
-              f"{int(row['n_significant'])}/{int(row['n_total'])} significant | "
-              f"up: {up} | down: {down}")
- 
-    print("\nOverall risk scores:")
-    print(overall_df.round(3).to_string(index=False))
- 
+    overall_df['risk_score'] = overall_df['overall_fraction'].apply(_fraction_to_risk)
+    overall_df = overall_df.sort_values('risk_score', ascending=False).reset_index(drop=True)
+
+    # ── Printout ───────────────────────────────────────────────────────────────
+    print(f"\n{'='*65}")
+    print(f"  {domain_name}")
+    print(f"  Significance: |log2FC| >= {SIGNIFICANCE_THRESHOLD} (2x fold-change)")
+    print(f"  R+1 weighted 0.5x (reentry stress confound)")
+    print(f"{'='*65}")
+
+    for astronaut, ast_df in timepoint_df.groupby('astronaut'):
+        risk = overall_df.loc[overall_df['astronaut'] == astronaut, 'risk_score'].values[0]
+        frac = overall_df.loc[overall_df['astronaut'] == astronaut, 'overall_fraction'].values[0]
+        print(f"\n  {astronaut}  —  Risk score: {risk}/5  (weighted fraction: {frac:.2f})")
+
+        for _, row in ast_df.iterrows():
+            print(f"\n    {row['timepoint']}  "
+                  f"({int(row['n_sig'])}/{int(row['n_total'])} markers significant)")
+
+            if row['up_scores']:
+                print(f"      Elevated:")
+                for marker, fc in sorted(row['up_scores'].items(), key=lambda x: -x[1]):
+                    print(f"        + {marker:<25} log2FC: {fc:+.2f}  ({2**fc:.1f}x increase)")
+
+            if row['down_scores']:
+                print(f"      Suppressed:")
+                for marker, fc in sorted(row['down_scores'].items(), key=lambda x: x[1]):
+                    print(f"        - {marker:<25} log2FC: {fc:+.2f}  ({2**abs(fc):.1f}x decrease)")
+
+            if not row['up_scores'] and not row['down_scores']:
+                print(f"        No significant markers at this timepoint")
+
+    print(f"\n{'─'*65}")
+    print(f"  Overall risk scores:")
+    print(overall_df[['astronaut', 'overall_fraction', 'risk_score']].round(3).to_string(index=False))
+
     return timepoint_df, overall_df
 
 
