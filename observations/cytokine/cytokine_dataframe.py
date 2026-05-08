@@ -31,7 +31,9 @@ def score_log2fc(x):
     elif x > 1.5: return  4
     elif x > 1.0: return  3
     elif x > 0.5: return  2
-    elif x >= -0.5: return 0  # stable — near baseline
+    elif x > 0.25: return 1
+    elif x >= -0.25: return 0 # stable
+    elif x >= -0.5: return -1
     elif x >= -1.0: return -2
     elif x >= -1.5: return -3
     elif x >= -2.0: return -4

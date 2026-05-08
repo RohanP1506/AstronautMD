@@ -8,7 +8,7 @@ immune_eve_long = process_cytokine_df(immune_eve, 'immune_eve')
 
 # Make observations on significant changes in concentration before and after flight
 postflight = immune_eve_long[immune_eve_long['timepoint'].str.startswith('R+')]
-significant = postflight[postflight['marker_score'] >= 1]
+significant = postflight[postflight['marker_score'].abs() >= 2]
 
 # Make a dataframe of the persistence of significant changes in certain markers over timepoints
 persistence = significant.groupby(['astronaut', 'marker']).agg(
@@ -30,7 +30,6 @@ markers = {
     'il_1ra_concentration_picogram_per_milliliter',  # IL-1 antagonist, regulatory brake
     'il_21_concentration_picogram_per_milliliter',   # T follicular helper
     'il_27_concentration_picogram_per_milliliter',   # Treg induction
-    'tnfb_concentration_picogram_per_milliliter',    # immunosuppressive (if this is TGF-α)
     'ifny_concentration_picogram_per_milliliter'     # Th1 effector
     ],'inflammation': [
     'il_1a_concentration_picogram_per_milliliter',   # acute phase inflammatory
@@ -40,7 +39,7 @@ markers = {
     'il_18_concentration_picogram_per_milliliter',   # inflammasome, IFN-γ inducer
     'il_33_concentration_picogram_per_milliliter',   # alarmin, tissue inflammation
     'tnfa_concentration_picogram_per_milliliter',    # master pro-inflammatory cytokine
-    'ifny_concentration_picogram_per_milliliter',    # Th1 inflammation (shared with immune reg)
+    'tnfb_concentration_picogram_per_milliliter',    # pro-inflammatory
     'groa_concentration_picogram_per_milliliter',    # neutrophil chemoattractant (CXCL1)
     'mcp_1_concentration_picogram_per_milliliter',   # monocyte recruitment
     'mip_1a_concentration_picogram_per_milliliter',  # macrophage inflammatory protein
