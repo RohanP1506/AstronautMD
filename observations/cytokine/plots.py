@@ -1,5 +1,103 @@
 from immune_eve import *
 import matplotlib.pyplot as plt
+# import seaborn as sns
+# import re
+
+# def sort_timepoints(timepoints):
+#     """Sort timepoints chronologically: L- preflight first, then R+ postflight by number."""
+#     def key(tp):
+#         m = re.match(r'(L|R)[+-](\d+)', tp)
+#         if not m:
+#             return (1, 0)
+#         direction, num = m.group(1), int(m.group(2))
+#         # L- timepoints sort before R+ timepoints; L- sorted descending (L-30 before L-7)
+#         return (0, -num) if direction == 'L' else (1, num)
+#     return sorted(timepoints, key=key)
+
+
+# def plot_log2fc_heatmap(processed_df, title_suffix='OSD-575 EVE Panel',
+#                         output_path='fig_log2fc_heatmap.png', min_abs_fc=0.5):
+#     """
+#     Heatmap of log2FC. One subplot per astronaut.
+#     Rows = markers, Columns = timepoints (chronological).
+#     Only shows markers hitting |log2FC| >= min_abs_fc in at least one timepoint.
+    
+#     Parameters
+#     ----------
+#     processed_df  : output of process_cytokine_df() — needs columns:
+#                     marker, log2fc, astronaut, timepoint
+#     title_suffix  : dataset label shown in the suptitle
+#     output_path   : where to save the figure
+#     min_abs_fc    : minimum absolute log2FC to include a marker row
+#     """
+#     df = processed_df.copy()
+
+#     # Extract short marker name: first 1-2 underscore tokens, uppercased
+#     # e.g. 'il_2_concentration_...' -> 'IL_2'
+#     df['marker_short'] = (
+#         df['marker']
+#         .str.extract(r'^([^_]+(?:_[^_]+)?)')[0]
+#         .str.upper()
+#     )
+
+#     # Filter to markers with at least one meaningful fold change
+#     max_abs = df.groupby('marker_short')['log2fc'].apply(lambda x: x.abs().max())
+#     keep = max_abs[max_abs >= min_abs_fc].index
+#     df = df[df['marker_short'].isin(keep)]
+
+#     astronauts = sorted(df['astronaut'].unique())
+#     all_timepoints = sort_timepoints(df['timepoint'].unique())
+#     all_markers = sorted(df['marker_short'].unique())
+
+#     n = len(astronauts)
+#     fig, axes = plt.subplots(
+#         1, n,
+#         figsize=(4.5 * n, max(4, 0.35 * len(all_markers) + 1.5)),
+#         sharey=True
+#     )
+#     if n == 1:
+#         axes = [axes]
+
+#     # Cap color scale at 95th percentile of absolute log2FC to avoid outlier washout
+#     vmax = min(df['log2fc'].abs().quantile(0.95), 3.5)
+
+#     for ax, astro in zip(axes, astronauts):
+#         sub = df[df['astronaut'] == astro]
+#         pivot = sub.pivot_table(
+#             index='marker_short',
+#             columns='timepoint',
+#             values='log2fc',
+#             aggfunc='mean'
+#         )
+#         ordered_cols = [tp for tp in all_timepoints if tp in pivot.columns]
+#         pivot = pivot.reindex(columns=ordered_cols, index=all_markers)
+
+#         sns.heatmap(
+#             pivot, ax=ax,
+#             cmap='RdBu_r', center=0, vmin=-vmax, vmax=vmax,
+#             linewidths=0.3, linecolor='#dddddd',
+#             cbar=(ax == axes[-1]),
+#             cbar_kws={'label': 'log₂FC', 'shrink': 0.6} if ax == axes[-1] else {}
+#         )
+#         ax.set_title(astro, fontweight='bold')
+#         ax.set_xlabel('Timepoint')
+#         ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right', fontsize=7)
+#         ax.set_ylabel('Marker' if ax == axes[0] else '')
+
+#     fig.suptitle(
+#         f'Cytokine Log₂FC Relative to Preflight Baseline\n{title_suffix}',
+#         fontsize=13, fontweight='bold', y=1.01
+#     )
+#     fig.tight_layout()
+#     fig.savefig(output_path, bbox_inches='tight', dpi=150)
+#     print(f'[✓] Saved: {output_path}')
+#     plt.close(fig)
+
+# plot_log2fc_heatmap(
+#     immune_eve_long,
+#     title_suffix='OSD-575 EVE Panel',
+#     output_path='fig_log2fc_heatmap_eve.png'
+# )
 
 for composite in to_plot:
     # Sort timepoints numerically

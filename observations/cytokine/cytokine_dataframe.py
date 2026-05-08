@@ -14,18 +14,28 @@ def organize_df(df):
 
     return melted_df
 
-def score_log2fc(x): # Scores on a 5 point scale
-    x = abs(x) # treat increases and decreases equally
-    if x < 0.5:
-        return 1 # stable - no meaningful change
-    elif x < 1.0:
-        return 2 # mild shift - less than 2x change
-    elif x < 1.5:
-        return 3 # moderate shift - 2x to ~3x change
-    elif x < 2.0:
-        return 4 # large shift - more than 3x change
-    else:
-        return 5 # severe - greater than 4x change
+# def score_log2fc(x): # Scores on a 5 point scale
+#     x = abs(x) # treat increases and decreases equally
+#     if x < 0.5:
+#         return 1 # stable - no meaningful change
+#     elif x < 1.0:
+#         return 2 # mild shift - less than 2x change
+#     elif x < 1.5:
+#         return 3 # moderate shift - 2x to ~3x change
+#     elif x < 2.0:
+#         return 4 # large shift - more than 3x change
+#     else:
+#         return 5 # severe - greater than 4x change
+def score_log2fc(x):
+    if x > 2.0:   return  5   # severe upregulation
+    elif x > 1.5: return  4
+    elif x > 1.0: return  3
+    elif x > 0.5: return  2
+    elif x >= -0.5: return 0  # stable — near baseline
+    elif x >= -1.0: return -2
+    elif x >= -1.5: return -3
+    elif x >= -2.0: return -4
+    else:           return -5  # severe downregulation
 
 # Get the baseline mean
 def compute_baseline(df):
