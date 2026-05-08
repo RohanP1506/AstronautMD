@@ -91,25 +91,12 @@ def score(df, markers):
     per_tp = per_tp[ordered_cols].round(2)
     print(per_tp.to_string())
 
-    def persistence_weighted_score(group):
-        group = group.sort_values('timepoint_num')
-        scores = group['marker_score'].values
-        timepoints = group['timepoint_num'].values
-
-        tp_min, tp_max = timepoints.min(), timepoints.max()
-        if tp_min == tp_max:
-            weights = np.ones(len(timepoints))
-        else:
-            weights = 1 + 3 * (timepoints - tp_min) / (tp_max - tp_min)
-
-        return np.average(scores, weights=weights)
-
     overall_scores = (
         composite
-        .groupby('astronaut')
-        .apply(persistence_weighted_score)
+        .groupby('astronaut')['marker_score']
+        .mean()
         .reset_index()
-        .rename(columns={0: 'overall_score'})
+        .rename(columns={'marker_score': 'overall_score'})
         .sort_values('overall_score', ascending=False)
     )
 
