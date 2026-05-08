@@ -79,14 +79,65 @@ def score(df, markers):
     composite['timepoint_num'] = composite['timepoint'].str.extract(r'R\+(\d+)').astype(int)
     composite = composite.sort_values(['astronaut', 'timepoint_num'])
 
+    # Print per-timepoint scores per astronaut
+    print("\nPer-timepoint scores:")
+    per_tp = (
+        composite
+        .pivot_table(index='astronaut', columns='timepoint', values='marker_score')
+    )
+    ordered_cols = sorted(per_tp.columns, key=lambda x: int(x.replace('R+','')))
+    per_tp = per_tp[ordered_cols].round(2)
+    print(per_tp.to_string())
+
+    def persistence_weighted_score(group):
+        group = group.sort_values('timepoint_num')
+        scores = group['marker_score'].values
+        timepoints = group['timepoint_num'].values
+
+        tp_min, tp_max = timepoints.min(), timepoints.max()
+        if tp_min == tp_max:
+            weights = np.ones(len(timepoints))
+        else:
+            weights = 1 + 3 * (timepoints - tp_min) / (tp_max - tp_min)
+
+        return np.average(scores, weights=weights)
+
     overall_scores = (
         composite
-        .groupby('astronaut')['marker_score']
-        .mean()
+        .groupby('astronaut')
+        .apply(persistence_weighted_score)
         .reset_index()
-        .rename(columns={'marker_score': 'overall_score'})
+        .rename(columns={0: 'overall_score'})
         .sort_values('overall_score', ascending=False)
     )
 
-    print(overall_scores)
+    # Print overall weighted scores
+    print("\nOverall weighted score:")
+    print(overall_scores.round(2).to_string(index=False))
+
     return composite, overall_scores
+# def score(df, markers):
+#     df = df[
+#         df['timepoint'].str.startswith('R+') &
+#         df['marker'].isin(markers)
+#     ]
+
+#     composite = (
+#         df.groupby(['astronaut', 'timepoint'])['marker_score']
+#         .mean()
+#         .reset_index()
+#     )
+#     composite['timepoint_num'] = composite['timepoint'].str.extract(r'R\+(\d+)').astype(int)
+#     composite = composite.sort_values(['astronaut', 'timepoint_num'])
+
+#     overall_scores = (
+#         composite
+#         .groupby('astronaut')['marker_score']
+#         .mean()
+#         .reset_index()
+#         .rename(columns={'marker_score': 'overall_score'})
+#         .sort_values('overall_score', ascending=False)
+#     )
+
+#     print(overall_scores)
+#     return composite, overall_scores
