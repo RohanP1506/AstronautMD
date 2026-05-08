@@ -16,11 +16,17 @@ def organize_urine_df(df):
     return melted_df
 
 def score_log2fc(x):
-    x = abs(x)
-    if x < 0.5: return 0
-    elif x < 1.0: return 1
-    elif x < 1.5: return 2
-    else: return 3
+    if x > 2.0:   return  5   # severe upregulation
+    elif x > 1.5: return  4
+    elif x > 1.0: return  3
+    elif x > 0.5: return  2
+    elif x > 0.25: return 1
+    elif x >= -0.25: return 0 # stable
+    elif x >= -0.5: return -1
+    elif x >= -1.0: return -2
+    elif x >= -1.5: return -3
+    elif x >= -2.0: return -4
+    else:           return -5  # severe downregulation
 
 def compute_baseline(df):
     preflight_mask = df['timepoint'].str.startswith('L-')
