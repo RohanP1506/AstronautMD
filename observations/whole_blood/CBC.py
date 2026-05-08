@@ -147,4 +147,3 @@ ax.legend()
 plt.tight_layout()
 plt.savefig('nlr_trajectory.png', dpi=150, bbox_inches='tight')
 plt.show()
-
