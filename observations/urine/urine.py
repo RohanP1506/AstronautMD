@@ -17,7 +17,7 @@ urine_processed = process_cytokine_df(urine_long, 'urine_alamar_656')
 
 # 4. Analyze Persistence (R+ timepoints)
 postflight = urine_processed[urine_processed['timepoint'].str.startswith('R+')]
-significant = postflight[postflight['marker_score'] >= 1]
+significant = postflight[postflight['marker_score'].abs() >= 2]
 
 persistence = significant.groupby(['astronaut', 'marker']).agg(
     times_significant = ('marker_score', 'count'),
