@@ -19,7 +19,8 @@ persistence = significant.groupby(['astronaut', 'marker']).agg(
 
 ### BEGIN CLASSIFICATION ###
 
-immune_regulation_markers = [
+markers = {
+    'immune_regulation': [
     'il_2_concentration_picogram_per_milliliter',    # T-cell proliferation
     'il_4_concentration_picogram_per_milliliter',    # Th2, B-cell activation
     'il_10_concentration_picogram_per_milliliter',   # anti-inflammatory, regulatory
@@ -30,30 +31,25 @@ immune_regulation_markers = [
     'il_21_concentration_picogram_per_milliliter',   # T follicular helper
     'il_27_concentration_picogram_per_milliliter',   # Treg induction
     'tnfb_concentration_picogram_per_milliliter',    # immunosuppressive (if this is TGF-α)
-    'ifny_concentration_picogram_per_milliliter',    # Th1 effector
-]
+    'ifny_concentration_picogram_per_milliliter'     # Th1 effector
+    ],'inflammation': [
+    'il_1a_concentration_picogram_per_milliliter',   # acute phase inflammatory
+    'il_1b_concentration_picogram_per_milliliter',   # canonical inflammasome cytokine
+    'il_6_concentration_picogram_per_milliliter',    # acute phase, fever response
+    'il_8_concentration_picogram_per_milliliter',    # neutrophil chemoattractant
+    'il_18_concentration_picogram_per_milliliter',   # inflammasome, IFN-γ inducer
+    'il_33_concentration_picogram_per_milliliter',   # alarmin, tissue inflammation
+    'tnfa_concentration_picogram_per_milliliter',    # master pro-inflammatory cytokine
+    'ifny_concentration_picogram_per_milliliter',    # Th1 inflammation (shared with immune reg)
+    'groa_concentration_picogram_per_milliliter',    # neutrophil chemoattractant (CXCL1)
+    'mcp_1_concentration_picogram_per_milliliter',   # monocyte recruitment
+    'mip_1a_concentration_picogram_per_milliliter',  # macrophage inflammatory protein
+    'mip_1b_concentration_picogram_per_milliliter',  # macrophage inflammatory protein
+    'ip_10_concentration_picogram_per_milliliter'    # CXCL10, IFN-driven inflammation
+]}
 
-reg_df = immune_eve_long[
-    immune_eve_long['timepoint'].str.startswith('R+') &
-    immune_eve_long['marker'].isin(immune_regulation_markers)
-]
-
-composite = (
-    reg_df.groupby(['astronaut', 'timepoint'])['marker_score'] 
-    .mean()
-    .reset_index()
-    .rename(columns={'marker_score': 'immune_regulation_score'})
-)
-composite['timepoint_num'] = composite['timepoint'].str.extract(r'R\+(\d+)').astype(int)
-composite = composite.sort_values(['astronaut', 'timepoint_num'])
-
-overall_scores = (
-    composite
-    .groupby('astronaut')['immune_regulation_score']
-    .mean()
-    .reset_index()
-    .rename(columns={'immune_regulation_score': 'overall_immune_regulation_score'})
-    .sort_values('overall_immune_regulation_score', ascending=False)
-)
-
-print(overall_scores)
+print("Immune Regulation Score:")
+immune_reg_composite, immune_reg_overall_score = score(immune_eve_long, markers['immune_regulation'])
+print("\nInflammation Score:")
+inflammation_composite, imflammation_overall_score = score(immune_eve_long, markers['inflammation'])
+to_plot = [immune_reg_composite, inflammation_composite]

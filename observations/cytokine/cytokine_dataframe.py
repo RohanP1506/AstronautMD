@@ -55,3 +55,28 @@ def process_cytokine_df(df, name):
     
     return df
 
+def score(df, markers):
+    df = df[
+        df['timepoint'].str.startswith('R+') &
+        df['marker'].isin(markers)
+    ]
+
+    composite = (
+        df.groupby(['astronaut', 'timepoint'])['marker_score']
+        .mean()
+        .reset_index()
+    )
+    composite['timepoint_num'] = composite['timepoint'].str.extract(r'R\+(\d+)').astype(int)
+    composite = composite.sort_values(['astronaut', 'timepoint_num'])
+
+    overall_scores = (
+        composite
+        .groupby('astronaut')['marker_score']
+        .mean()
+        .reset_index()
+        .rename(columns={'marker_score': 'overall_score'})
+        .sort_values('overall_score', ascending=False)
+    )
+
+    print(overall_scores)
+    return composite, overall_scores
