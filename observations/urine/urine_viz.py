@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+from matplotlib.patches import Patch
 import seaborn as sns
 import re
 
@@ -100,7 +101,7 @@ def plot_composite_timeline(composite_scores, output_path='fig1_composite_timeli
         ax.set_title(domain.replace('_', ' ').title(), color=color, fontweight='bold')
         ax.set_xticks(range(len(all_timepoints)))
         ax.set_xticklabels(all_timepoints, rotation=45, ha='right')
-        ax.set_ylim(0, 5.2)
+        ax.set_ylim(-5.2, 5.2)
         ax.set_xlabel('Timepoint')
         ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
         ax.axhspan(2.0, 5.2, color=color, alpha=0.05)  # highlight elevated zone
@@ -186,35 +187,39 @@ def plot_log2fc_heatmap(urine_processed, output_path='fig2_log2fc_heatmap.png',
 # Faceted per astronaut
 # ─────────────────────────────────────────────
 def plot_persistence_bars(urine_processed, output_path='fig3_persistence_bars.png',
-                           top_n=10):
+                          top_n=10):
     """
-    Horizontal bar chart: markers ranked by how many post-flight
-    timepoints they had marker_score >= 1.
-    Color = mean log2FC direction (red=up, blue=down).
-    One subplot per astronaut.
+    Diverging horizontal bar chart: 
+    - Bar length = Mean log2FC (Magnitude)
+    - Rank = Persistence (How many timepoints significant)
+    - Color = Direction (Red = Up, Blue = Down)
     """
     df = urine_processed.copy()
     df['marker_short'] = df['marker'].str.extract(r'^([^_]+(?:_[^_]+)?)')[0].str.upper()
 
     postflight = df[df['timepoint'].str.startswith('R+')]
-    sig = postflight[postflight['marker_score'] >= 1]
+    
+    # Filter for both directions
+    sig = postflight[postflight['marker_score'].abs() >= 1]
 
     persistence = sig.groupby(['astronaut', 'marker_short']).agg(
         times_significant=('marker_score', 'count'),
         mean_log2fc=('log2fc', 'mean'),
-        max_score=('marker_score', 'max')
+        max_abs_score=('marker_score', lambda x: x.abs().max())
     ).reset_index()
 
     astronauts = sorted(persistence['astronaut'].unique())
     n = len(astronauts)
 
-    fig, axes = plt.subplots(1, n, figsize=(5 * n, 5))
+    fig, axes = plt.subplots(1, n, figsize=(6 * n, 5), sharex=True)
     if n == 1:
         axes = [axes]
 
     for ax, astro in zip(axes, astronauts):
         sub = persistence[persistence['astronaut'] == astro]
-        sub = sub.sort_values(['times_significant', 'max_score'], ascending=True).tail(top_n)
+        
+        # We still sort by persistence so the most 'reliable' markers are at the top
+        sub = sub.sort_values(['times_significant', 'max_abs_score'], ascending=True).tail(top_n)
 
         if sub.empty:
             ax.text(0.5, 0.5, 'No persistent markers', ha='center', va='center', 
@@ -223,35 +228,45 @@ def plot_persistence_bars(urine_processed, output_path='fig3_persistence_bars.pn
             continue
 
         colors = ['#E05C5C' if v > 0 else '#5B8DD9' for v in sub['mean_log2fc']]
-        bars = ax.barh(sub['marker_short'], sub['times_significant'],
-                       color=colors, edgecolor='white', linewidth=0.5, height=0.65)
+        
+        # CHANGE: Bar length is now the actual mean_log2fc value
+        bars = ax.barh(sub['marker_short'], sub['mean_log2fc'],
+                        color=colors, edgecolor='white', linewidth=0.5, height=0.7)
 
-        # Annotate with mean log2FC
+        # CHANGE: Annotate with the number of significant timepoints (Persistence)
         for bar, (_, row) in zip(bars, sub.iterrows()):
-            ax.text(bar.get_width() + 0.05, bar.get_y() + bar.get_height() / 2,
-                    f"{row['mean_log2fc']:+.2f}", va='center', fontsize=7.5, color='#333333')
+            # Place text at the end of the bar
+            x_pos = bar.get_width()
+            ha = 'left' if x_pos > 0 else 'right'
+            offset = 0.05 if x_pos > 0 else -0.05
+            
+            ax.text(x_pos + offset, bar.get_y() + bar.get_height() / 2,
+                    f"n={int(row['times_significant'])}", 
+                    va='center', ha=ha, fontsize=8, fontweight='bold', color='#444444')
 
-        ax.set_xlabel('# R+ Timepoints Significant')
+        ax.axvline(0, color='black', linewidth=0.8) # Add a center line at 0
+        ax.set_xlabel('Mean log₂ Fold Change')
         ax.set_title(astro, fontweight='bold')
-        ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-        ax.set_xlim(0, sub['times_significant'].max() + 1.5)
+        
+        # Adjust limits to ensure labels fit
+        limit = max(sub['mean_log2fc'].abs().max() + 1, 2)
+        ax.set_xlim(-limit, limit)
 
     # Legend
-    from matplotlib.patches import Patch
     legend_elements = [
-        Patch(facecolor='#E05C5C', label='Upregulated (mean log₂FC > 0)'),
-        Patch(facecolor='#5B8DD9', label='Downregulated (mean log₂FC < 0)')
+        Patch(facecolor='#E05C5C', label='Upregulated (Increase)'),
+        Patch(facecolor='#5B8DD9', label='Downregulated (Decrease)')
     ]
     fig.legend(handles=legend_elements, loc='lower center', ncol=2,
-               bbox_to_anchor=(0.5, -0.05), fontsize=9, frameon=False)
+                bbox_to_anchor=(0.5, -0.08), fontsize=10, frameon=False)
 
-    fig.suptitle('Post-Flight Marker Persistence\nOSD-656 Urine Cytokines (R+ Timepoints, Score ≥ 1)',
-                 fontsize=13, fontweight='bold')
+    fig.suptitle('Persistent Post-Flight Immune Shifts\nMagnitude and Direction of Change (n = significant timepoints)',
+                 fontsize=14, fontweight='bold', y=1.02)
+    
     fig.tight_layout()
     fig.savefig(output_path, bbox_inches='tight')
     print(f"[✓] Saved: {output_path}")
     plt.close(fig)
-
 
 # ─────────────────────────────────────────────
 # MAIN — call this from urine.py

@@ -6,7 +6,7 @@ from urine_viz import generate_all_figures
 
 
 # 2. Load the OSD-656 Urine Dataset
-urine_url = 'https://osdr.nasa.gov/geode-py/ws/studies/OSD-656/download?source=datamanager&file=LSDS-64_Multiplex_urine.immune.AlamarPanel_TRANSFORMED.csv'
+urine_url = 'observations/urine/urine_data.csv'
 urine_raw = pd.read_csv(urine_url, index_col=0)
 
 # 3. Run Pipeline
@@ -55,4 +55,4 @@ print("\n--- Persistent Domain Elevations (R+ Timepoints) ---")
 print(domain_persistence)
 
 
-generate_all_figures(urine_processed, composite_scores, output_dir='figures')
+generate_all_figures(urine_processed, composite_scores, output_dir='observations/urine/figures')
