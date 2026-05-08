@@ -17,15 +17,15 @@ def organize_df(df):
 def score_log2fc(x): # Scores on a 5 point scale
     x = abs(x) # treat increases and decreases equally
     if x < 0.5:
-        return 0 # stable - no meaningful change
+        return 1 # stable - no meaningful change
     elif x < 1.0:
-        return 1 # mild shift - less than 2x change
+        return 2 # mild shift - less than 2x change
     elif x < 1.5:
-        return 2 # moderate shift - 2x to ~3x change
+        return 3 # moderate shift - 2x to ~3x change
     elif x < 2.0:
-        return 3 # large shift - more than 3x change
+        return 4 # large shift - more than 3x change
     else:
-        return 4 # severe - greater than 4x change
+        return 5 # severe - greater than 4x change
 
 # Get the baseline mean
 def compute_baseline(df):
