@@ -69,49 +69,8 @@ SUBJECTS = ['C001', 'C002', 'C003', 'C004']
 print("=" * 60)
 print("STEP 1: CBC")
 print("=" * 60)
-
-cbc_raw = pd.read_csv(
-    'https://osdr.nasa.gov/geode-py/ws/studies/OSD-569/download?source=datamanager'
-    '&file=LSDS-7_Complete_Blood_Count_CBC.upload_SUBMITTED.csv',
-    index_col=0
-)
-
-subject_col   = 'SUBJECT_ID'
-timepoint_col = 'TEST_DATE'
-preflight     = ['L-92', 'L-44', 'L-3']
-postflight    = ['R+1', 'R+45', 'R+82', 'R+194']
-
-cbc_wide = cbc_raw.pivot_table(
-    index=[subject_col, timepoint_col],
-    columns='ANALYTE',
-    values='VALUE'
-).reset_index()
-
-cbc_metrics = [c for c in cbc_wide.columns if c not in [subject_col, timepoint_col]]
-log2fc_records = []
-
-for subject in cbc_wide[subject_col].unique():
-    sd        = cbc_wide[cbc_wide[subject_col] == subject]
-    pre       = sd[sd[timepoint_col].isin(preflight)]
-    pre_means = pre[cbc_metrics].mean()
-    post      = sd[sd[timepoint_col].isin(postflight)]
-
-    for _, row in post.iterrows():
-        record = {subject_col: subject, timepoint_col: row[timepoint_col]}
-        for m in cbc_metrics:
-            if pd.notna(pre_means[m]) and pd.notna(row[m]) and pre_means[m] > 0 and row[m] > 0:
-                record[m] = np.log2(row[m] / pre_means[m])
-            else:
-                record[m] = np.nan
-        log2fc_records.append(record)
-
-log2fc_df = pd.DataFrame(log2fc_records)
-log2fc_df = log2fc_df.drop(
-    columns=['RED BLOOD CELL COUNT (FEMALE)', 'HEMATOCRIT (FEMALE)', 'HEMOGLOBIN (FEMALE)'],
-    errors='ignore'
-)
-
-cbc_scores = score_cbc(log2fc_df, subject_col=subject_col, timepoint_col=timepoint_col)
+cbc_raw = pd.read_csv('data/cbc.csv')
+cbc_scores = score_cbc(cbc_raw, subject_col='SUBJECT_ID', timepoint_col='TEST_DATE')
 
 # ── 2. RNA-seq scoring ──────────────────────────────────────────────────────────
 print("\n" + "=" * 60)
@@ -503,7 +462,7 @@ function showAstronaut(subject) {{
 </body>
 </html>"""
 
-with open('outputs/dashboard.html', 'w') as f:
+with open('outputs/dashboard.html', 'w', encoding='utf-8') as f:
     f.write(html)
 print("  Saved: outputs/dashboard.html")
 

@@ -2,15 +2,15 @@
   "C001": {
     "immune_regulation": {
       "risk_score": 2,
-      "fraction": 0.125,
-      "n_sources": 2,
-      "sources": "CBC, RNAseq"
+      "fraction": 0.12,
+      "n_sources": 3,
+      "sources": "CBC, Cytokine, RNAseq"
     },
     "inflammation": {
-      "risk_score": 1,
-      "fraction": 0.047,
-      "n_sources": 2,
-      "sources": "CBC, Urine"
+      "risk_score": 2,
+      "fraction": 0.153,
+      "n_sources": 3,
+      "sources": "CBC, Cytokine, Urine"
     },
     "oxidative_stress": {
       "risk_score": 1,
@@ -33,20 +33,20 @@
   },
   "C002": {
     "immune_regulation": {
-      "risk_score": 3,
-      "fraction": 0.279,
-      "n_sources": 2,
-      "sources": "CBC, RNAseq"
+      "risk_score": 2,
+      "fraction": 0.225,
+      "n_sources": 3,
+      "sources": "CBC, Cytokine, RNAseq"
     },
     "inflammation": {
-      "risk_score": 1,
-      "fraction": 0.027,
-      "n_sources": 2,
-      "sources": "CBC, Urine"
+      "risk_score": 2,
+      "fraction": 0.182,
+      "n_sources": 3,
+      "sources": "CBC, Cytokine, Urine"
     },
     "oxidative_stress": {
       "risk_score": 2,
-      "fraction": 0.155,
+      "fraction": 0.202,
       "n_sources": 3,
       "sources": "CBC, RNAseq, Urine"
     },
@@ -66,15 +66,15 @@
   "C003": {
     "immune_regulation": {
       "risk_score": 3,
-      "fraction": 0.357,
-      "n_sources": 3,
-      "sources": "CBC, RNAseq"
+      "fraction": 0.291,
+      "n_sources": 4,
+      "sources": "CBC, Cytokine, RNAseq"
     },
     "inflammation": {
-      "risk_score": 1,
-      "fraction": 0.01,
-      "n_sources": 2,
-      "sources": "CBC, Urine"
+      "risk_score": 2,
+      "fraction": 0.148,
+      "n_sources": 3,
+      "sources": "CBC, Cytokine, Urine"
     },
     "oxidative_stress": {
       "risk_score": 2,
@@ -98,15 +98,15 @@
   "C004": {
     "immune_regulation": {
       "risk_score": 1,
-      "fraction": 0.0,
-      "n_sources": 2,
-      "sources": "CBC, RNAseq"
+      "fraction": 0.044,
+      "n_sources": 3,
+      "sources": "CBC, Cytokine, RNAseq"
     },
     "inflammation": {
-      "risk_score": 1,
-      "fraction": 0.041,
-      "n_sources": 2,
-      "sources": "CBC, Urine"
+      "risk_score": 2,
+      "fraction": 0.135,
+      "n_sources": 3,
+      "sources": "CBC, Cytokine, Urine"
     },
     "oxidative_stress": {
       "risk_score": 2,

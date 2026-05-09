@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AstronautMD — Inspiration4 Health Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e8eaf0;
+    --muted: #8a8fa8;
+    --accent: #4a9eff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+  header { background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%);
+            border-bottom: 1px solid var(--border); padding: 20px 40px; }
+  header h1 { font-size: 1.8rem; color: var(--accent); }
+  header p  { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
+  .tab-bar { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 10px 24px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--card); color: var(--muted); cursor: pointer;
+    font-size: 1rem; font-weight: 600; transition: all 0.2s;
+  }
+  .tab-btn:hover  { border-color: var(--accent); color: var(--accent); }
+  .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .astronaut-panel { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  .panel-header { margin-bottom: 20px; }
+  .panel-header h2 { font-size: 1.5rem; }
+  .subtitle { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+  .section-title {
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
+    color: var(--muted); text-transform: uppercase; margin-bottom: 12px; margin-top: 24px;
+  }
+  .domain-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .domain-card {
+    background: var(--card); border-radius: 10px; padding: 16px 12px;
+    border-left: 5px solid #555; text-align: center;
+  }
+  .domain-name  { font-size: 0.78rem; color: var(--muted); margin-bottom: 8px; min-height: 36px; }
+  .risk-score   { font-size: 2rem; font-weight: 800; }
+  .risk-label   { font-size: 0.75rem; font-weight: 600; margin-top: 2px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 8px; }
+  .figure-img { width: 100%; border-radius: 10px; border: 1px solid var(--border); }
+  .sources-box {
+    background: var(--card); border-radius: 10px; padding: 16px;
+    font-size: 0.82rem; line-height: 1.8; border: 1px solid var(--border); color: var(--muted);
+  }
+  .caveat-box {
+    background: #1e1a0f; border: 1px solid #5a4a10; border-radius: 10px;
+    padding: 14px; font-size: 0.8rem; color: #c8a84b; margin-top: 12px; line-height: 1.6;
+  }
+  .heatmap-section { margin-top: 40px; }
+  .heatmap-section img { width: 100%; border-radius: 10px; border: 1px solid var(--border); }
+  footer {
+    border-top: 1px solid var(--border); padding: 20px 40px; color: var(--muted);
+    font-size: 0.8rem; text-align: center; margin-top: 40px;
+  }
+  @media (max-width: 768px) {
+    .domain-grid { grid-template-columns: repeat(2, 1fr); }
+    .two-col { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>🚀 AstronautMD</h1>
+  <p>Individualized health risk dashboard — Inspiration4 mission &nbsp;|&nbsp; Torchlight Biosovereignty Hackathon</p>
+</header>
+<div class="container">
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showAstronaut('C001')">C001</button>
+    <button class="tab-btn" onclick="showAstronaut('C002')">C002</button>
+    <button class="tab-btn" onclick="showAstronaut('C003')">C003</button>
+    <button class="tab-btn" onclick="showAstronaut('C004')">C004</button>
+    
+  </div>
+  
+    <div id="panel-C001" class="astronaut-panel" style="display:block;">
+      <div class="panel-header">
+        <h2>Crew Member C001</h2>
+        <p class="subtitle">Individualized health risk profile — Inspiration4 mission</p>
+      </div>
+      <div class="section-title">Domain Risk Scores</div>
+      <div class="domain-grid"><div class="domain-card" style="border-left: 5px solid #82c341;">  <div class="domain-name">Immune Regulation</div>  <div class="risk-score" style="color:#82c341;">2/5</div>  <div class="risk-label" style="color:#82c341;">Mild</div></div><div class="domain-card" style="border-left: 5px solid #82c341;">  <div class="domain-name">Inflammation</div>  <div class="risk-score" style="color:#82c341;">2/5</div>  <div class="risk-label" style="color:#82c341;">Mild</div></div><div class="domain-card" style="border-left: 5px solid #27ae60;">  <div class="domain-name">Oxidative Stress</div>  <div class="risk-score" style="color:#27ae60;">1/5</div>  <div class="risk-label" style="color:#27ae60;">Low</div></div><div class="domain-card" style="border-left: 5px solid #82c341;">  <div class="domain-name">DNA Damage Response</div>  <div class="risk-score" style="color:#82c341;">2/5</div>  <div class="risk-label" style="color:#82c341;">Mild</div></div><div class="domain-card" style="border-left: 5px solid #27ae60;">  <div class="domain-name">Mitochondrial Function</div>  <div class="risk-score" style="color:#27ae60;">1/5</div>  <div class="risk-label" style="color:#27ae60;">Low</div></div></div>
+      <div class="two-col">
+        <div>
+          <div class="section-title">Radar Profile</div>
+          <img src="radar_C001.png" class="figure-img" alt="Radar chart for C001">
+        </div>
+        <div>
+          <div class="section-title">Data Sources per Domain</div>
+          <div class="sources-box"><b>Immune Regulation:</b> CBC, Cytokine, RNAseq<br><b>Inflammation:</b> CBC, Cytokine, Urine<br><b>Oxidative Stress:</b> CBC, RNAseq, Urine<br><b>DNA Damage Response:</b> RNAseq, m6A<br><b>Mitochondrial Function:</b> RNAseq</div>
+          <div class="caveat-box">
+            ⚠ <b>n=4 limitation:</b> Scores are within-person comparisons only.
+            Each astronaut serves as their own baseline. No group-level p-values
+            are reported — only deviation magnitudes. RNA-seq per-astronaut scores
+            are magnitude estimates from single-sample comparisons.
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="panel-C002" class="astronaut-panel" style="display:none;">
+      <div class="panel-header">
+        <h2>Crew Member C002</h2>
+        <p class="subtitle">Individualized health risk profile — Inspiration4 mission</p>
+      </div>
+      <div class="section-title">Domain Risk Scores</div>
+      <div class="domain-grid"><div class="domain-card" style="border-left: 5px solid #82c341;">  <div class="domain-name">Immune Regulation</div>  <div class="risk-score" style="color:#82c341;">2/5</div>  <div class="risk-label" style="color:#82c341;">Mild</div></div><div class="domain-card" style="border-left: 5px solid #82c341;">  <div class="domain-name">Inflammation</div>  <div class="risk-score" style="color:#82c341;">2/5</div>  <div class="risk-label" style="color:#82c341;">Mild</div></div><div class="domain-card" style="border-left: 5px solid #82c341;">  <div class="domain-name">Oxidative Stress</div>  <div class="risk-score" style="color:#82c341;">2/5</div>  <div class="risk-label" style="color:#82c341;">Mild</div></div><div class="domain-card" style="border-left: 5px solid #e67e22;">  <div class="domain-name">DNA Damage Response</div>  <div class="risk-score" style="color:#e67e22;">4/5</div>  <div class="risk-label" style="color:#e67e22;">Significant</div></div><div class="domain-card" style="border-left: 5px solid #e67e22;">  <div class="domain-name">Mitochondrial Function</div>  <div class="risk-score" style="color:#e67e22;">4/5</div>  <div class="risk-label" style="color:#e67e22;">Significant</div></div></div>
+      <div class="two-col">
+        <div>
+          <div class="section-title">Radar Profile</div>
+          <img src="radar_C002.png" class="figure-img" alt="Radar chart for C002">
+        </div>
+        <div>
+          <div class="section-title">Data Sources per Domain</div>
+          <div class="sources-box"><b>Immune Regulation:</b> CBC, Cytokine, RNAseq<br><b>Inflammation:</b> CBC, Cytokine, Urine<br><b>Oxidative Stress:</b> CBC, RNAseq, Urine<br><b>DNA Damage Response:</b> RNAseq, m6A<br><b>Mitochondrial Function:</b> RNAseq</div>
+          <div class="caveat-box">
+            ⚠ <b>n=4 limitation:</b> Scores are within-person comparisons only.
+            Each astronaut serves as their own baseline. No group-level p-values
+            are reported — only deviation magnitudes. RNA-seq per-astronaut scores
+            are magnitude estimates from single-sample comparisons.
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="panel-C003" class="astronaut-panel" style="display:none;">
+      <div class="panel-header">
+        <h2>Crew Member C003</h2>
+        <p class="subtitle">Individualized health risk profile — Inspiration4 mission</p>
+      </div>
+      <div class="section-title">Domain Risk Scores</div>
+      <div class="domain-grid"><div class="domain-card" style="border-left: 5px solid #f39c12;">  <div class="domain-name">Immune Regulation</div>  <div class="risk-score" style="color:#f39c12;">3/5</div>  <div class="risk-label" style="color:#f39c12;">Moderate</div></div><div class="domain-card" style="border-left: 5px solid #82c341;">  <div class="domain-name">Inflammation</div>  <div class="risk-score" style="color:#82c341;">2/5</div>  <div class="risk-label" style="color:#82c341;">Mild</div></div><div class="domain-card" style="border-left: 5px solid #82c341;">  <div class="domain-name">Oxidative Stress</div>  <div class="risk-score" style="color:#82c341;">2/5</div>  <div class="risk-label" style="color:#82c341;">Mild</div></div><div class="domain-card" style="border-left: 5px solid #e67e22;">  <div class="domain-name">DNA Damage Response</div>  <div class="risk-score" style="color:#e67e22;">4/5</div>  <div class="risk-label" style="color:#e67e22;">Significant</div></div><div class="domain-card" style="border-left: 5px solid #e67e22;">  <div class="domain-name">Mitochondrial Function</div>  <div class="risk-score" style="color:#e67e22;">4/5</div>  <div class="risk-label" style="color:#e67e22;">Significant</div></div></div>
+      <div class="two-col">
+        <div>
+          <div class="section-title">Radar Profile</div>
+          <img src="radar_C003.png" class="figure-img" alt="Radar chart for C003">
+        </div>
+        <div>
+          <div class="section-title">Data Sources per Domain</div>
+          <div class="sources-box"><b>Immune Regulation:</b> CBC, Cytokine, RNAseq<br><b>Inflammation:</b> CBC, Cytokine, Urine<br><b>Oxidative Stress:</b> CBC, RNAseq, Urine<br><b>DNA Damage Response:</b> RNAseq, m6A<br><b>Mitochondrial Function:</b> RNAseq</div>
+          <div class="caveat-box">
+            ⚠ <b>n=4 limitation:</b> Scores are within-person comparisons only.
+            Each astronaut serves as their own baseline. No group-level p-values
+            are reported — only deviation magnitudes. RNA-seq per-astronaut scores
+            are magnitude estimates from single-sample comparisons.
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="panel-C004" class="astronaut-panel" style="display:none;">
+      <div class="panel-header">
+        <h2>Crew Member C004</h2>
+        <p class="subtitle">Individualized health risk profile — Inspiration4 mission</p>
+      </div>
+      <div class="section-title">Domain Risk Scores</div>
+      <div class="domain-grid"><div class="domain-card" style="border-left: 5px solid #27ae60;">  <div class="domain-name">Immune Regulation</div>  <div class="risk-score" style="color:#27ae60;">1/5</div>  <div class="risk-label" style="color:#27ae60;">Low</div></div><div class="domain-card" style="border-left: 5px solid #82c341;">  <div class="domain-name">Inflammation</div>  <div class="risk-score" style="color:#82c341;">2/5</div>  <div class="risk-label" style="color:#82c341;">Mild</div></div><div class="domain-card" style="border-left: 5px solid #82c341;">  <div class="domain-name">Oxidative Stress</div>  <div class="risk-score" style="color:#82c341;">2/5</div>  <div class="risk-label" style="color:#82c341;">Mild</div></div><div class="domain-card" style="border-left: 5px solid #f39c12;">  <div class="domain-name">DNA Damage Response</div>  <div class="risk-score" style="color:#f39c12;">3/5</div>  <div class="risk-label" style="color:#f39c12;">Moderate</div></div><div class="domain-card" style="border-left: 5px solid #e67e22;">  <div class="domain-name">Mitochondrial Function</div>  <div class="risk-score" style="color:#e67e22;">4/5</div>  <div class="risk-label" style="color:#e67e22;">Significant</div></div></div>
+      <div class="two-col">
+        <div>
+          <div class="section-title">Radar Profile</div>
+          <img src="radar_C004.png" class="figure-img" alt="Radar chart for C004">
+        </div>
+        <div>
+          <div class="section-title">Data Sources per Domain</div>
+          <div class="sources-box"><b>Immune Regulation:</b> CBC, Cytokine, RNAseq<br><b>Inflammation:</b> CBC, Cytokine, Urine<br><b>Oxidative Stress:</b> CBC, RNAseq, Urine<br><b>DNA Damage Response:</b> RNAseq, m6A<br><b>Mitochondrial Function:</b> RNAseq</div>
+          <div class="caveat-box">
+            ⚠ <b>n=4 limitation:</b> Scores are within-person comparisons only.
+            Each astronaut serves as their own baseline. No group-level p-values
+            are reported — only deviation magnitudes. RNA-seq per-astronaut scores
+            are magnitude estimates from single-sample comparisons.
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  <div class="heatmap-section">
+    <div class="section-title">Crew-Wide Comparison</div>
+    <img src="domain_heatmap.png" alt="Domain heatmap all astronauts">
+  </div>
+</div>
+<footer>
+  AstronautMD &mdash; Jeremy John, Rohan Pandit, Kai Mayberry &nbsp;|&nbsp;
+  Data: NASA OSDR OSD-569, OSD-575, GLDS-561 &nbsp;|&nbsp;
+  Torchlight Biosovereignty Hackathon 2026
+</footer>
+<script>
+const SCORES = {"C001": {"immune_regulation": {"risk_score": 2, "fraction": 0.12, "n_sources": 3, "sources": "CBC, Cytokine, RNAseq"}, "inflammation": {"risk_score": 2, "fraction": 0.153, "n_sources": 3, "sources": "CBC, Cytokine, Urine"}, "oxidative_stress": {"risk_score": 1, "fraction": 0.051, "n_sources": 3, "sources": "CBC, RNAseq, Urine"}, "dna_damage": {"risk_score": 2, "fraction": 0.223, "n_sources": 2, "sources": "RNAseq, m6A"}, "mitochondrial": {"risk_score": 1, "fraction": 0.0, "n_sources": 1, "sources": "RNAseq"}}, "C002": {"immune_regulation": {"risk_score": 2, "fraction": 0.225, "n_sources": 3, "sources": "CBC, Cytokine, RNAseq"}, "inflammation": {"risk_score": 2, "fraction": 0.182, "n_sources": 3, "sources": "CBC, Cytokine, Urine"}, "oxidative_stress": {"risk_score": 2, "fraction": 0.202, "n_sources": 3, "sources": "CBC, RNAseq, Urine"}, "dna_damage": {"risk_score": 4, "fraction": 0.5, "n_sources": 2, "sources": "RNAseq, m6A"}, "mitochondrial": {"risk_score": 4, "fraction": 0.5, "n_sources": 1, "sources": "RNAseq"}}, "C003": {"immune_regulation": {"risk_score": 3, "fraction": 0.291, "n_sources": 4, "sources": "CBC, Cytokine, RNAseq"}, "inflammation": {"risk_score": 2, "fraction": 0.148, "n_sources": 3, "sources": "CBC, Cytokine, Urine"}, "oxidative_stress": {"risk_score": 2, "fraction": 0.2, "n_sources": 3, "sources": "CBC, RNAseq, Urine"}, "dna_damage": {"risk_score": 4, "fraction": 0.511, "n_sources": 2, "sources": "RNAseq, m6A"}, "mitochondrial": {"risk_score": 4, "fraction": 0.5, "n_sources": 1, "sources": "RNAseq"}}, "C004": {"immune_regulation": {"risk_score": 1, "fraction": 0.044, "n_sources": 3, "sources": "CBC, Cytokine, RNAseq"}, "inflammation": {"risk_score": 2, "fraction": 0.135, "n_sources": 3, "sources": "CBC, Cytokine, Urine"}, "oxidative_stress": {"risk_score": 2, "fraction": 0.124, "n_sources": 3, "sources": "CBC, RNAseq, Urine"}, "dna_damage": {"risk_score": 3, "fraction": 0.335, "n_sources": 2, "sources": "RNAseq, m6A"}, "mitochondrial": {"risk_score": 4, "fraction": 0.5, "n_sources": 1, "sources": "RNAseq"}}};
+const DOMAINS = ["immune_regulation", "inflammation", "oxidative_stress", "dna_damage", "mitochondrial"];
+const DOMAIN_LABELS = {"immune_regulation": "Immune Regulation", "inflammation": "Inflammation", "oxidative_stress": "Oxidative Stress", "dna_damage": "DNA Damage Response", "mitochondrial": "Mitochondrial Function"};
+
+function showAstronaut(subject) {
+  document.querySelectorAll('.astronaut-panel').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + subject).style.display = 'block';
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    if (b.textContent.trim() === subject) b.classList.add('active');
+  });
+}
+</script>
+</body>
+</html>

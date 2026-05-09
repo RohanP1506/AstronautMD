@@ -1,29 +1,24 @@
 """
 cbc_score.py — CBC domain scoring for AstronautMD
-Scores CBC log2FC data per astronaut per canonical biological domain.
+Scores using clinical reference ranges on raw values, not log2FC.
+A marker is flagged if its raw value falls outside RANGE_MIN/RANGE_MAX
+at a given postflight timepoint. Fraction of flagged markers = domain score.
 """
 
 import numpy as np
 import pandas as pd
 
-# ── Configuration ──────────────────────────────────────────────────────────────
-
-SIGNIFICANCE_THRESHOLD = 1.0  # |log2FC| >= 1.0 = 2x fold-change
-
 TIMEPOINT_WEIGHTS = {
-    'R+1':   0.5,   # downweighted — reentry stress confound
+    'R+1':   0.5,
     'R+45':  1.0,
     'R+82':  1.0,
     'R+194': 1.0,
 }
 
-# CBC metrics mapped to canonical biological domains.
-# Only metrics with clear mechanistic relevance to each domain.
-# Weights: 1.0 = primary indicator, 0.5 = secondary.
 CBC_DOMAIN_MAP = {
     'immune_regulation': {
-        'WHITE BLOOD CELL COUNT': 1.0,   # overall immune cell burden
-        'LYMPHOCYTES':            1.0,   # adaptive immune arm
+        'WHITE BLOOD CELL COUNT': 1.0,
+        'LYMPHOCYTES':            1.0,
         'ABSOLUTE LYMPHOCYTES':   1.0,
         'EOSINOPHILS':            0.5,
         'ABSOLUTE EOSINOPHILS':   0.5,
@@ -31,25 +26,22 @@ CBC_DOMAIN_MAP = {
         'ABSOLUTE BASOPHILS':     0.5,
     },
     'inflammation': {
-        'NEUTROPHILS':            1.0,   # primary innate inflammatory cell
+        'NEUTROPHILS':            1.0,
         'ABSOLUTE NEUTROPHILS':   1.0,
-        'MONOCYTES':              0.5,   # secondary inflammatory mediator
+        'MONOCYTES':              0.5,
         'ABSOLUTE MONOCYTES':     0.5,
-        'PLATELET COUNT':         0.5,   # acute phase response marker
+        'PLATELET COUNT':         0.5,
     },
     'oxidative_stress': {
-        'RED BLOOD CELL COUNT':   1.0,   # space anemia — oxidative RBC destruction
+        'RED BLOOD CELL COUNT':   1.0,
         'HEMOGLOBIN':             1.0,
         'HEMATOCRIT':             1.0,
-        'MCV':                    0.5,   # erythrocyte volume — erythropoietic stress proxy
-        'RDW':                    0.5,   # red cell distribution width — anisocytosis
+        'MCV':                    0.5,
+        'RDW':                    0.5,
     },
 }
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
-
 def _fraction_to_risk(fraction):
-    """Bin weighted fraction of significant markers to 1-5 risk score."""
     if fraction < 0.10:   return 1
     elif fraction < 0.25: return 2
     elif fraction < 0.50: return 3
@@ -57,17 +49,14 @@ def _fraction_to_risk(fraction):
     else:                  return 5
 
 
-# ── Main ───────────────────────────────────────────────────────────────────────
-
-def score_cbc(log2fc_df, subject_col='SUBJECT_ID', timepoint_col='TEST_DATE'):
+def score_cbc(cbc_raw, subject_col='SUBJECT_ID', timepoint_col='TEST_DATE'):
     """
-    Score CBC data per astronaut per domain.
+    Score CBC data per astronaut per domain using clinical reference ranges.
 
     Parameters
     ----------
-    log2fc_df    : DataFrame from CBC.py log2FC pipeline.
-                   Columns: SUBJECT_ID, TEST_DATE, [CBC metric columns...].
-                   Rows: one per astronaut x postflight timepoint.
+    cbc_raw      : raw CBC dataframe (long format) with columns:
+                   ANALYTE, VALUE, RANGE_MIN, RANGE_MAX, SUBJECT_ID, TEST_DATE
     subject_col  : column name for subject ID
     timepoint_col: column name for timepoint
 
@@ -75,32 +64,47 @@ def score_cbc(log2fc_df, subject_col='SUBJECT_ID', timepoint_col='TEST_DATE'):
     -------
     DataFrame with columns: astronaut, domain, overall_fraction, risk_score, source
     """
+    postflight = ['R+1', 'R+45', 'R+82', 'R+194']
+
+    # Build a lookup: (subject, timepoint, analyte) -> (value, range_min, range_max)
+    post = cbc_raw[cbc_raw[timepoint_col].isin(postflight)].copy()
+    post = post.reset_index(drop=True)
+
+    # Flag out-of-range values
+    post['out_of_range'] = (
+        (post['VALUE'] < post['RANGE_MIN']) |
+        (post['VALUE'] > post['RANGE_MAX'])
+    )
+
     records = []
 
     for domain, marker_weights in CBC_DOMAIN_MAP.items():
-        # Only use markers that are actually in the dataframe
-        available = {m: w for m, w in marker_weights.items() if m in log2fc_df.columns}
-        if not available:
-            print(f"  Warning: no markers found for domain '{domain}'")
-            continue
-        total_weight = sum(available.values())
-
-        for astronaut in sorted(log2fc_df[subject_col].unique()):
-            ast_data = log2fc_df[log2fc_df[subject_col] == astronaut]
+        for astronaut in sorted(post[subject_col].unique()):
+            ast = post[post[subject_col] == astronaut]
             weighted_sum = 0.0
             weight_sum   = 0.0
 
-            for _, row in ast_data.iterrows():
-                tp   = row[timepoint_col]
-                tp_w = TIMEPOINT_WEIGHTS.get(tp, 1.0)
+            for tp in postflight:
+                tp_data = ast[ast[timepoint_col] == tp]
+                if tp_data.empty:
+                    continue
 
-                sig_w = sum(
-                    w for m, w in available.items()
-                    if pd.notna(row.get(m)) and abs(row.get(m, 0)) >= SIGNIFICANCE_THRESHOLD
-                )
-                fraction     = sig_w / total_weight if total_weight > 0 else 0.0
-                weighted_sum += fraction * tp_w
-                weight_sum   += tp_w
+                tp_w         = TIMEPOINT_WEIGHTS.get(tp, 1.0)
+                total_weight = 0.0
+                flagged_weight = 0.0
+
+                for marker, w in marker_weights.items():
+                    row = tp_data[tp_data['ANALYTE'] == marker]
+                    if row.empty:
+                        continue
+                    total_weight += w
+                    if row['out_of_range'].values[0]:
+                        flagged_weight += w
+
+                if total_weight > 0:
+                    fraction      = flagged_weight / total_weight
+                    weighted_sum += fraction * tp_w
+                    weight_sum   += tp_w
 
             overall_fraction = weighted_sum / weight_sum if weight_sum > 0 else 0.0
 
