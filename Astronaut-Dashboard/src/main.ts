@@ -9,6 +9,42 @@ Chart.register(RadarController, RadialLinearScale, PointElement,
 let scores: ScoresJSON = {}
 let activeSubject = SUBJECTS[0]
 let radarChart: Chart | null = null
+let anemiaVisible = true
+
+const ASTRONAUT_SUMMARIES: Record<string, { summary: string; followup: string[] }> = {
+  C001: {
+    summary: `Your overall health profile looks good. Most areas are showing only minor changes from your pre-flight baseline. The areas with the most activity are DNA damage response and inflammation — both mild. Your body appears to be handling the return to Earth well. One thing to keep an eye on: your red blood cell markers showed a small dip, which is common after spaceflight and typically resolves on its own.`,
+    followup: [
+      'Schedule a routine blood panel at your next check-up to confirm red blood cell levels have returned to normal',
+      'Continue standard post-flight monitoring — your profile does not indicate any urgent concerns',
+      'No additional action required at this time',
+    ]
+  },
+  C002: {
+    summary: `Your profile shows two areas of elevated activity worth monitoring — DNA damage response and mitochondrial function, both scoring Significant (4/5). These suggest your cells were under meaningful stress during or after the mission. Your immune system and inflammation levels are mild and consistent with normal post-flight recovery. The DNA and mitochondrial signals were picked up across multiple data sources, which makes them more reliable findings.`,
+    followup: [
+      'Follow up with your flight surgeon to review the DNA damage and mitochondrial findings in more detail',
+      'Consider additional blood work at your next scheduled appointment — these signals are worth tracking over time',
+      'Prioritize sleep and recovery — mitochondrial stress responds well to rest and reduced physical load in the short term',
+    ]
+  },
+  C003: {
+    summary: `Your profile shows the most variation across the crew. DNA damage response and mitochondrial function are both Significant (4/5). You also showed the highest immune regulation score of any crew member — Moderate (3/5) — meaning your immune system showed more shifts from baseline than others. This does not necessarily indicate illness, but suggests your body mounted a stronger response to spaceflight. Worth monitoring in follow-up.`,
+    followup: [
+      'Discuss your immune regulation scores with your flight surgeon — the elevated response is worth monitoring across the next few timepoints',
+      'Follow up on DNA damage and mitochondrial markers at your next scheduled blood draw',
+      'If you notice unusual fatigue or difficulty recovering from exercise, flag this early — it may be consistent with what the data is showing',
+    ]
+  },
+  C004: {
+    summary: `Your profile is one of the more stable in the crew. Immune regulation is Low (1/5) — the best score across all four crew members in that category. DNA damage response is Moderate (3/5) and mitochondrial function is Significant (4/5), consistent with the rest of the crew in those areas. Overall your inflammatory and immune markers look close to your pre-flight baseline.`,
+    followup: [
+      'Routine post-flight monitoring is sufficient given your overall stable profile',
+      'Follow up on mitochondrial function markers at your next check-up — this was elevated across the whole crew and worth tracking',
+      'No urgent action required — your immune and inflammatory markers look close to your pre-flight baseline',
+    ]
+  },
+}
 
 async function loadScores(): Promise<void> {
   const res = await fetch('./scores.json')
@@ -85,12 +121,52 @@ function buildScoreCards(astro: AstronautScores): string {
   `
 }
 
+function buildNotification(subject: string): string {
+  const data = ASTRONAUT_SUMMARIES[subject]
+  if (!data) return ''
+
+  if (!anemiaVisible) return `
+    <button class="anemia-show-btn" id="anemia-show-btn">
+      View your personal health summary
+    </button>
+  `
+
+  return `
+    <div class="anemia-card" id="anemia-card">
+      <div class="anemia-header">
+        <div class="anemia-title-group">
+          <span class="anemia-icon">📋</span>
+          <div>
+            <div class="anemia-title">Your Post-Flight Health Summary</div>
+            <div class="anemia-subtitle">Based on your personal pre-flight baseline across 5 biological domains</div>
+          </div>
+        </div>
+        <button class="anemia-dismiss" id="anemia-dismiss">Dismiss</button>
+      </div>
+      <div class="anemia-body">
+        <p class="anemia-text">${data.summary}</p>
+        <div class="followup-section">
+          <div class="followup-title">Recommended Follow-up</div>
+          <ul class="followup-list">
+            ${data.followup.map(item => `<li>${item}</li>`).join('')}
+          </ul>
+        </div>
+        <div class="anemia-finding">
+          <span class="anemia-finding-label">⚠ Key Finding:</span>
+          Red blood cell production genes were suppressed at landing across the crew, confirmed by blood counts, gene expression, and epigenetic data.
+        </div>
+      </div>
+    </div>
+  `
+}
+
 function buildPanel(subject: string): string {
   const astro = scores[subject]
   if (!astro) return ''
 
   return `
     <div class="panel">
+      ${buildNotification(subject)}
       <div class="panel-top">
         <div class="panel-left">
           <div class="section-label">Domain Risk Scores</div>
@@ -190,11 +266,13 @@ function drawRadar(subject: string): void {
 
   const data = DOMAINS.map(d => astro[d].risk_score)
   const labels = DOMAINS.map(d => {
-  const words = DOMAIN_LABELS[d].split(' ')
-  if (words.length <= 2) return words
-  return [words.slice(0, Math.ceil(words.length / 2)).join(' '),
-          words.slice(Math.ceil(words.length / 2)).join(' ')]
-})
+    const words = DOMAIN_LABELS[d].split(' ')
+    if (words.length <= 2) return words
+    return [
+      words.slice(0, Math.ceil(words.length / 2)).join(' '),
+      words.slice(Math.ceil(words.length / 2)).join(' ')
+    ]
+  })
 
   radarChart = new Chart(canvas, {
     type: 'radar',
@@ -249,6 +327,29 @@ function drawRadar(subject: string): void {
   })
 }
 
+function wireAnemia(): void {
+  const dismiss = document.getElementById('anemia-dismiss')
+  const show = document.getElementById('anemia-show-btn')
+  if (dismiss) {
+    dismiss.addEventListener('click', () => {
+      anemiaVisible = false
+      const container = document.getElementById('panel-container')!
+      container.innerHTML = buildPanel(activeSubject)
+      drawRadar(activeSubject)
+      wireAnemia()
+    })
+  }
+  if (show) {
+    show.addEventListener('click', () => {
+      anemiaVisible = true
+      const container = document.getElementById('panel-container')!
+      container.innerHTML = buildPanel(activeSubject)
+      drawRadar(activeSubject)
+      wireAnemia()
+    })
+  }
+}
+
 function render(): void {
   const app = document.getElementById('app')!
   app.innerHTML = `
@@ -263,7 +364,6 @@ function render(): void {
     ${buildFooter()}
   `
 
-  // Tab click handlers
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       activeSubject = (btn as HTMLElement).dataset.subject!
@@ -272,10 +372,12 @@ function render(): void {
       const container = document.getElementById('panel-container')!
       container.innerHTML = buildPanel(activeSubject)
       drawRadar(activeSubject)
+      wireAnemia()
     })
   })
 
   drawRadar(activeSubject)
+  wireAnemia()
 }
 
 loadScores()
