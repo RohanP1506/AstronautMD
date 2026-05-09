@@ -189,7 +189,12 @@ function drawRadar(subject: string): void {
   if (!astro) return
 
   const data = DOMAINS.map(d => astro[d].risk_score)
-  const labels = DOMAINS.map(d => DOMAIN_LABELS[d])
+  const labels = DOMAINS.map(d => {
+  const words = DOMAIN_LABELS[d].split(' ')
+  if (words.length <= 2) return words
+  return [words.slice(0, Math.ceil(words.length / 2)).join(' '),
+          words.slice(Math.ceil(words.length / 2)).join(' ')]
+})
 
   radarChart = new Chart(canvas, {
     type: 'radar',
@@ -223,7 +228,7 @@ function drawRadar(subject: string): void {
           angleLines: { color: 'rgba(255,255,255,0.08)' },
           pointLabels: {
             color: '#94a3b8',
-            font: { size: 11, family: 'DM Sans', weight: '500' },
+            font: { size: 11, family: 'DM Sans', weight: 500 },
           }
         }
       },

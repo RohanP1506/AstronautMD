@@ -156,7 +156,7 @@ main {
 
 .panel-top {
   display: grid;
-  grid-template-columns: 1fr 360px;
+  grid-template-columns: 1fr 420px;
   gap: 24px;
   margin-bottom: 24px;
 }
@@ -164,7 +164,7 @@ main {
 /* ── Score cards ── */
 .score-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   margin-bottom: 16px;
 }
@@ -246,6 +246,15 @@ main {
 .radar-wrap {
   width: 100%;
   aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+#radar-chart {
+  max-width: 100% !important;
+  max-height: 100% !important;
 }
 
 /* ── Sources ── */
