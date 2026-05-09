@@ -1,181 +1,70 @@
-# 🚀 AstronautMD
-**An individualized multi-omics health dashboard for astronaut recovery monitoring**
+# 🚀 AstronautMD — Individualized Astronaut Health Risk Dashboard
 
-**Team:** Jeremy John · Rohan Pandit · Kai Mayberry
-
-## Project Summary
-
-AstronautMD is an individualized bioinformatics dashboard that translates raw multi-omics spaceflight data into transparent, actionable health risk profiles for each crew member. Using data from NASA's Inspiration4 mission (OSDR OSD-569, OSD-575, OSD-656), we score four astronauts across five biological domains — immune regulation, inflammation, anemia risk, mitochondrial stress, and proteostasis — and present results as a personalized, time-resolved scorecard that a non-specialist can interpret.
-
-The core design principle: **every astronaut serves as their own control.** All scores are derived from within-person fold-changes against a personal preflight baseline, never group statistics.
+**Team:** Jeremy John, Rohan Pandit, Kai Mayberry
+**Hackathon:** Torchlight Biosovereignty Hackathon 2026 — Track 2: Individualized Risk Profile
 
 ---
 
-## Motivation & Problem Statement
+## Problem
 
-The Inspiration4 mission generated one of the richest multi-omics datasets ever collected in a civilian spaceflight context, spanning cytokine arrays, urine proteomics, plasma metabolomics, whole-blood RNA-seq, complete blood counts, and direct RNA m6A methylation — hundreds of values per person across eight timepoints.
+The Inspiration4 mission generated hundreds of biological measurements per astronaut across 8 timepoints — from 92 days before launch through 194 days after landing. This data is publicly available through NASA's Open Science Data Repository, but it lives across dozens of raw spreadsheets with no integrated interpretation layer.
 
-Despite this richness, **the data are not currently interpretable at the individual level.** Existing analyses report crew-wide averages or differential expression statistics that collapse across all four astronauts. An individual crew member or their flight surgeon cannot look at a fold-change table and answer: *"How did my immune system respond? Is it back to normal? What should I watch?"*
+Existing spaceflight biology analyses report group-level findings. But with only 4 crew members, traditional statistics are underpowered and inappropriate. The real clinical question isn't *what happened to the crew on average* — it's **what happened to this specific astronaut, in this specific biological domain, relative to their own body before flight?**
 
-AstronautMD addresses this gap by:
-- Computing personalized risk scores per biological domain per timepoint
-- Presenting scores on a per-astronaut dashboard, not a group summary
-- Contextualizing individual findings against crew-level differential expression as a confidence indicator
-- Explicitly communicating statistical limitations at the n=4 scale alongside every score
+AstronautMD was built to answer that question.
 
 ---
 
-## Data Sources
+## Approach
 
-| Dataset | OSDR ID | Modality | Used For |
-|---|---|---|---|
-| Serum multiplex cytokines (EVE Panel) | OSD-575 | Protein (multiplex) | Immune regulation · Inflammation |
-| Urine immune/inflammatory proteomics (Alamar Panel) | OSD-656 | Protein (proximity extension) | Inflammation · Oxidative stress |
-| Complete blood count | OSD-569 | Clinical labs | Anemia corroboration · NLR |
-| Whole-blood RNA-seq | OSD-569 / GLDS-561 | Transcriptomics | Anemia risk · Immune dysregulation · Mitochondrial stress · Proteostasis · Transcriptional stress |
-| Direct RNA m6A methylation | OSD-569 / GLDS-561 | Epitranscriptomics | Post-transcriptional regulation (in progress) |
-| Plasma metabolomics DEGs | Pre-computed | Metabolomics | Crew-level confidence indicator |
-| Plasma / EVP proteomics DEGs | Pre-computed | Proteomics | Crew-level confidence indicator |
+We integrated five NASA OSDR datasets spanning the full multi-omics picture of spaceflight health:
 
----
-
-## Scoring Framework
-
-### Design Principles
-
-AstronautMD uses a scoring framework based on individual-level evidence Domain composite scores are the primary output. They are computed from per-astronaut log₂ fold-changes against each person's own preflight mean. No group statistics are used or implied.
-
----
-
-### Part A: Cytokine & Urine Scoring (OSD-575 / OSD-656)
-
-Used for **immune regulation** and **inflammation** domains. Produces a time-resolved trajectory across all postflight timepoints.
-
-#### Step 1 — Personal Baseline
-Each astronaut's preflight mean is computed across all pre-launch timepoints (L-92, L-44, L-3) per marker.
-
-#### Step 2 — Log₂ Fold-Change
-```
-log₂FC = log₂(postflight concentration / personal preflight mean)
-```
-Significance threshold: **|log₂FC| ≥ 1.0** (≥ 2x fold-change).
-
-#### Step 3 — Domain Score (Weighted Fraction)
-```
-weighted_fraction = Σ(weights of significant markers) / Σ(weights of all domain markers)
-```
-Marker weights reflect biological centrality: **1.0** for primary domain drivers, **0.5** for secondary contributors.
-
-> **Note on IFN-γ:** IFN-γ is included in the immune regulation domain (serum cytokines) but excluded from the RNA-seq immune dysregulation domain to avoid double-counting its contribution across modalities, which would artificially inflate cross-domain correlation.
-
-#### Step 4 — Timepoint Weighting
-R+1 is down-weighted to **0.5×** to reduce confounding from acute reentry physiological stress (G-force, fluid shifts, sleep disruption). All other postflight timepoints are weighted **1.0×**.
-
-#### Step 5 — Risk Tier
-
-| Tier | Label | Weighted fraction of markers affected |
+| Dataset | Source | What it measures |
 |---|---|---|
-| 1 | Minimal | < 10% |
-| 2 | Mild | 10–25% |
-| 3 | Moderate | 25–50% |
-| 4 | Significant | 50–75% |
-| 5 | Severe | > 75% |
+| Complete Blood Count | OSD-569 | Immune cells, red blood cells, platelets |
+| Whole blood RNA-seq | GLDS-561 | Gene expression across biological domains |
+| Direct m6A sequencing | GLDS-561 | Epitranscriptomic modification at R+1 |
+| Serum cytokines (EVE panel) | OSD-575 | 23 circulating immune signaling proteins |
+| Urine cytokines (Alamar panel) | OSD-656 | Urinary inflammation and oxidative stress markers |
+
+Each astronaut's postflight measurements are compared to their own personal preflight mean across L-92, L-44, and L-3 — making every astronaut their own control. Findings are mapped onto five canonical biological domains: **immune regulation, inflammation, oxidative stress, DNA damage response, and mitochondrial function**. Within each domain, markers are weighted by their biological centrality, and the R+1 timepoint is downweighted to avoid conflating acute reentry physiology with true spaceflight-induced pathology. Final domain scores are binned into a 1–5 risk tier per astronaut and surfaced through an interactive dashboard.
 
 ---
 
-### RNA-seq Scoring (OSD-569 / GLDS-561)
+## Results
 
-Used for **anemia risk, immune dysregulation, mitochondrial stress, proteostasis, and transcriptional stress** domains. Only the R+1 timepoint is available, so this produces a **snapshot score**, not a trajectory.
+### The Strongest Finding: Space Anemia Confirmed Across Three Independent Data Layers
 
-#### Why a Different Scoring Method?
-Cytokine scoring uses the fraction of markers significant (bounded 0–1), which works because each domain contains ~10–13 carefully selected markers. RNA-seq domains contain hundreds of candidate genes — the fraction significant would approach zero regardless of effect size. Instead, RNA-seq domains are scored using the **weighted mean |log₂FC| of significant DEGs**, which captures both the breadth and magnitude of dysregulation.
+The most compelling result in the dataset is the convergence of signal on a single gene — **HBM (Hemoglobin M)** — across three completely independent measurement modalities at R+1:
 
-#### Step 1 — Personal Baseline (same principle)
-Per-astronaut preflight mean computed from all L- timepoints available in the RNA-seq data (L-92, L-44, L-3 for each astronaut).
+- **CBC:** Hemoglobin and RBC counts trend toward or below clinical reference bounds in multiple crew members post-landing
+- **RNA-seq:** HBM is significantly downregulated (log2FC −1.47) at R+1 vs preflight baseline
+- **m6A sequencing:** HBM shows simultaneous epigenetic modification at R+1
 
-#### Step 2 — Significance Filter (dual gate)
-A gene is significant if it passes **both**:
-- Personal |log₂FC| ≥ 1.0 (within-person 2x fold-change)
-- DESeq2 adjusted p-value < 0.05 (crew-level statistical reliability)
+Transcriptional suppression and epitranscriptomic modification of the same erythroid gene, corroborated by clinical blood counts, is the strongest multi-layer biological signal in the dataset and directly supports the space anemia narrative.
 
-This dual gate uses crew-level statistics only to filter noise, not to score — the score itself is always within-person.
+### Crew-Wide Domain Risk Scores
 
-#### Step 3 — Domain Assignment
-Significant DEGs are matched against curated gene sets for each domain by gene symbol. Gene sets are derived from g:Profiler enrichment results run on the RNA-seq DEG list.
+DNA damage response and mitochondrial function domains show the highest scores overall, driven by RNA-seq and m6A data at R+1, with notable inter-individual variability — C002 and C003 score higher than C001 and C004, suggesting that the cellular stress response to spaceflight is not uniform across crew members. Serum cytokine inflammation markers remain elevated as late as R+82 and R+194, pointing to prolonged rather than acute post-landing inflammatory activity. Immune regulation scores are generally mild across the crew by R+194, suggesting partial recovery of the adaptive immune arm within six months of landing.
 
-| RNA-seq Domain | Biological Focus | Gene Set Examples | Domain Weight |
-|---|---|---|---|
-| **Anemia Risk** | RBC biology, erythropoiesis, heme/iron metabolism | HBB, HBA1/2, ALAS2, KLF1, TFRC, GYPA/B | 1.0 |
-| **Immune Dysregulation** | Adaptive immunity, cytotoxic T/NK cells, B cells, Tregs | CD3D/E/G, GZMB, PRF1, CD19, FOXP3, KLRD1 | 1.0 |
-| **Mitochondrial Stress** | OXPHOS complexes, electron transport chain, membrane transport | MT-CO1/2/3, MT-ND1/2, UQCRC1/2, COX4I1 | 0.8 |
-| **Proteostasis** | Ubiquitin-proteasome system, protein quality control, chaperones | UBB, PSMA1-2, PSMB1-3, HSPA1A, HSP90AA1 | 0.8 |
-| **Transcriptional Stress** | Stress-responsive TFs, immediate early genes, chromatin regulators | EGR1-3, FOS/FOSB, JUN/JUNB, ATF3/4, NR4A1-3 | 0.6 |
-
-#### Step 4 — Risk Tier (RNA-seq)
-
-| Tier | Label | Mean |log₂FC| of significant domain genes |
-|---|---|---|
-| 1 | Minimal | 0 significant genes |
-| 2 | Mild | > 0 genes, mean \|log₂FC\| < 1.5 |
-| 3 | Moderate | mean \|log₂FC\| 1.5–2.0 |
-| 4 | Significant | mean \|log₂FC\| 2.0–3.0 |
-| 5 | Severe | mean \|log₂FC\| > 3.0 |
+> 📊 Figures, radar charts, and the full interactive dashboard are in the `outputs/` directory.
 
 ---
 
-### CBC: Corroborating Evidence, Not a Scored Domain
+## Impact
 
-Complete blood count data is presented as **raw clinical values with reference range bands**, not as log₂FC. This follows standard medical advice: a hemoglobin of 11.2 g/dL is clinically meaningful; a log₂FC of −0.3 is not. CBC is used in two ways:
+Space medicine is entering an era where commercial spaceflight will send people with no astronaut training — and no crew physician — into orbit. The tools to monitor and interpret their health in real time don't yet exist in an accessible form. AstronautMD is a proof of concept that publicly available multi-omics data can be integrated into an individualized, interpretable health risk profile without requiring bioinformatics expertise to read.
 
-1. **Anemia corroboration:** Hemoglobin and RBC count below the lower clinical reference bound at postflight timepoints provide direct clinical validation for the RNA-seq Anemia Risk domain score.
-2. **NLR (Neutrophil-to-Lymphocyte Ratio):** A validated clinical stress index plotted over the full pre- and postflight trajectory. NLR > 3 = elevated; NLR > 5 = markedly elevated. Used as a corroborating inflammatory marker alongside cytokine domain scores.
-
-CBC does **not** contribute a primary domain score to the AstronautMD dashboard — it provides supporting clinical context for RNA-seq and cytokine findings.
+The within-person scoring framework scales naturally: every additional dataset or biomarker panel adds another signal to the same five-domain structure. And because scores are built from the fraction of markers showing abnormal values — not black-box model outputs — every score is fully traceable back to the underlying data.
 
 ---
 
-## Preliminary Results
+## How to Run It
 
- Serum cytokine domains (immune regulation, inflammation) are fully scored. Urine Alamar composite scores are complete. RNA-seq scoring framework is implemented and pending data integration. CBC visualizations and anemia corroboration table are complete.
+Requires Node.js.
 
----
-
-### Serum Cytokines — Immune Regulation Domain
-
-Postflight immune regulatory profiles are **relatively the same** across the four crew members. No uniform group-level response is observed.
-
-**C001** shows early elevation in IL-10 and IL-13 at R+1, significant suppression at R+45, and a rebound in IL-2 by R+82. Profile largely normalizes by R+194.
-
-**C002** exhibits the most pronounced and persistent dysregulation. IL-21 and IL-4 remain strongly suppressed at R+82 and R+194, suggesting prolonged disruption to T follicular helper and Th2 signaling. Composite marker score remains below baseline through the final timepoint.
-
-**C003** shows an early IL-2 spike at R+1 that resolves rapidly — the regulatory cytokine profile is largely restored by R+45, the fastest apparent recovery in this domain.
-
-**C004** shows late-onset elevation in IL-10, IL-13, and IL-4 at R+194, consistent with a delayed Th2 shift emerging well into recovery.
-
----
-
-### Serum Cytokines — Inflammation Domain
-
-**C001** shows suppression of MCP-1, IL-8, and IP-10 at R+45 and R+82, suggesting a period of dampened innate immune recruitment during mid-recovery.
-
-**C002** displays a paradoxical inflammatory spike at R+45 (IL-8, IP-10 elevated), followed by a prolonged suppressive trend through R+194. The log₂FC trajectory crosses baseline twice — inconsistent with simple resolution.
-
-**C003** maintains relatively modest inflammatory shifts throughout, with gradual upregulation persisting at R+82 and R+194.
-
-**C004** is the most stable in this domain, remaining close to preflight levels across all postflight timepoints.
-
----
-
-### Urine Biomarkers — OSD-656 Alamar Panel
-
-Urine inflammation composite scores remain low (near baseline) for most astronauts postflight. Oxidative stress markers show substantially more inter-individual variation, with C002 and C004 showing marked fluctuation even in the preflight window. Persistent marker analysis identifies C002 as having the broadest sustained response (PTX3, MMP8, MMP9, MPO, S100A12, HGF across all three postflight timepoints), consistent with ongoing neutrophil activation and extracellular matrix remodeling.
-
----
-
-### Key Observations
-
-1. **Immune recovery is individual-specific.** No two astronauts follow the same trajectory in direction, magnitude, or timing.
-2. **C002 shows the most sustained immune disruption** across both serum and urine modalities.
-3. **Suppression, not elevation, dominates late recovery** for inflammatory markers in C001 and C002 — potentially compensatory immunosuppression, or genuine resolution; the RNA-seq data will help distinguish these.
-4. **Urine oxidative stress markers capture a different biological layer** than serum cytokines, with tissue-level signals (AGER, HGF, MMPs) not reflected in the multiplex serum panel.
-5. **The R+1 timepoint is an unreliable signal** for several markers due to acute reentry physiology — consistent with our decision to down-weight it in scoring.
+```bash
+cd Astronaut-Dashboard
+npm install
+npm run dev
+```
