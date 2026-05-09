@@ -1,0 +1,21 @@
+astronaut,domain,mean_fraction,n_sources,sources,final_risk
+C001,dna_damage,0.2234,2,"RNAseq, m6A",2
+C001,immune_regulation,0.125,2,"CBC, RNAseq",2
+C001,inflammation,0.0466,2,"CBC, Urine",1
+C001,mitochondrial,0.0,1,RNAseq,1
+C001,oxidative_stress,0.05126666666666666,3,"CBC, RNAseq, Urine",1
+C002,dna_damage,0.5,2,"RNAseq, m6A",4
+C002,immune_regulation,0.27855,2,"CBC, RNAseq",3
+C002,inflammation,0.026979999999999997,2,"CBC, Urine",1
+C002,mitochondrial,0.5,1,RNAseq,4
+C002,oxidative_stress,0.15476666666666666,3,"CBC, RNAseq, Urine",2
+C003,dna_damage,0.51065,2,"RNAseq, m6A",4
+C003,immune_regulation,0.35713333333333336,3,"CBC, RNAseq",3
+C003,inflammation,0.00962,2,"CBC, Urine",1
+C003,mitochondrial,0.5,1,RNAseq,4
+C003,oxidative_stress,0.19999999999999998,3,"CBC, RNAseq, Urine",2
+C004,dna_damage,0.3351,2,"RNAseq, m6A",3
+C004,immune_regulation,0.0,2,"CBC, RNAseq",1
+C004,inflammation,0.040990000000000006,2,"CBC, Urine",1
+C004,mitochondrial,0.5,1,RNAseq,4
+C004,oxidative_stress,0.12380000000000001,3,"CBC, RNAseq, Urine",2

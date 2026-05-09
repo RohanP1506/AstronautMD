@@ -1,0 +1,130 @@
+{
+  "C001": {
+    "immune_regulation": {
+      "risk_score": 2,
+      "fraction": 0.125,
+      "n_sources": 2,
+      "sources": "CBC, RNAseq"
+    },
+    "inflammation": {
+      "risk_score": 1,
+      "fraction": 0.047,
+      "n_sources": 2,
+      "sources": "CBC, Urine"
+    },
+    "oxidative_stress": {
+      "risk_score": 1,
+      "fraction": 0.051,
+      "n_sources": 3,
+      "sources": "CBC, RNAseq, Urine"
+    },
+    "dna_damage": {
+      "risk_score": 2,
+      "fraction": 0.223,
+      "n_sources": 2,
+      "sources": "RNAseq, m6A"
+    },
+    "mitochondrial": {
+      "risk_score": 1,
+      "fraction": 0.0,
+      "n_sources": 1,
+      "sources": "RNAseq"
+    }
+  },
+  "C002": {
+    "immune_regulation": {
+      "risk_score": 3,
+      "fraction": 0.279,
+      "n_sources": 2,
+      "sources": "CBC, RNAseq"
+    },
+    "inflammation": {
+      "risk_score": 1,
+      "fraction": 0.027,
+      "n_sources": 2,
+      "sources": "CBC, Urine"
+    },
+    "oxidative_stress": {
+      "risk_score": 2,
+      "fraction": 0.155,
+      "n_sources": 3,
+      "sources": "CBC, RNAseq, Urine"
+    },
+    "dna_damage": {
+      "risk_score": 4,
+      "fraction": 0.5,
+      "n_sources": 2,
+      "sources": "RNAseq, m6A"
+    },
+    "mitochondrial": {
+      "risk_score": 4,
+      "fraction": 0.5,
+      "n_sources": 1,
+      "sources": "RNAseq"
+    }
+  },
+  "C003": {
+    "immune_regulation": {
+      "risk_score": 3,
+      "fraction": 0.357,
+      "n_sources": 3,
+      "sources": "CBC, RNAseq"
+    },
+    "inflammation": {
+      "risk_score": 1,
+      "fraction": 0.01,
+      "n_sources": 2,
+      "sources": "CBC, Urine"
+    },
+    "oxidative_stress": {
+      "risk_score": 2,
+      "fraction": 0.2,
+      "n_sources": 3,
+      "sources": "CBC, RNAseq, Urine"
+    },
+    "dna_damage": {
+      "risk_score": 4,
+      "fraction": 0.511,
+      "n_sources": 2,
+      "sources": "RNAseq, m6A"
+    },
+    "mitochondrial": {
+      "risk_score": 4,
+      "fraction": 0.5,
+      "n_sources": 1,
+      "sources": "RNAseq"
+    }
+  },
+  "C004": {
+    "immune_regulation": {
+      "risk_score": 1,
+      "fraction": 0.0,
+      "n_sources": 2,
+      "sources": "CBC, RNAseq"
+    },
+    "inflammation": {
+      "risk_score": 1,
+      "fraction": 0.041,
+      "n_sources": 2,
+      "sources": "CBC, Urine"
+    },
+    "oxidative_stress": {
+      "risk_score": 2,
+      "fraction": 0.124,
+      "n_sources": 3,
+      "sources": "CBC, RNAseq, Urine"
+    },
+    "dna_damage": {
+      "risk_score": 3,
+      "fraction": 0.335,
+      "n_sources": 2,
+      "sources": "RNAseq, m6A"
+    },
+    "mitochondrial": {
+      "risk_score": 4,
+      "fraction": 0.5,
+      "n_sources": 1,
+      "sources": "RNAseq"
+    }
+  }
+}
