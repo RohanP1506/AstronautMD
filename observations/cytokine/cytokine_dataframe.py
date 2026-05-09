@@ -1,9 +1,6 @@
 import numpy as np
 import pandas as pd
 
-# =============================================================================
-# DATA LOADING & PROCESSING
-# =============================================================================
 
 def organize_df(df):
     """
@@ -21,7 +18,6 @@ def organize_df(df):
     melted_df = melted_df[melted_df['concentration'] > 0].dropna(subset=['concentration'])
     return melted_df.reset_index(drop=True)
 
-
 def compute_baseline(df):
     """
     Personal baseline per astronaut per marker: mean across all L- preflight timepoints.
@@ -35,7 +31,6 @@ def compute_baseline(df):
         .rename(columns={'concentration': 'baseline_mean'})
     )
 
-
 def process_cytokine_df(df, name):
     """
     Merge baseline and compute log2FC. No scoring here.
@@ -47,7 +42,6 @@ def process_cytokine_df(df, name):
     df['log2fc'] = np.log2(df['concentration'] / df['baseline_mean'])
     df['source'] = name
     return df.reset_index(drop=True)
-
 
 # =============================================================================
 # SCORING CONFIGURATION
@@ -79,7 +73,6 @@ def set_marker_weights(weights):
     global _MARKER_WEIGHTS
     _MARKER_WEIGHTS = weights
 
-
 def _fraction_to_risk(fraction):
     """Bin weighted fraction of significant markers into 1-5 risk score."""
     if fraction < 0.10:   return 1
@@ -91,11 +84,6 @@ def _fraction_to_risk(fraction):
 
 def _clean_name(marker):
     return marker.split('_concentration')[0].upper()
-
-
-# =============================================================================
-# MAIN SCORING FUNCTION
-# =============================================================================
 
 def score(df, markers, domain_name=''):
     """
