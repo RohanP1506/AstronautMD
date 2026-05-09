@@ -37,8 +37,8 @@ from cbc_score        import score_cbc
 from rnaseq_score     import score_rnaseq
 from m6a_score        import score_m6a
 from cytokine_score   import score_cytokines
-from composite_score  import calculate_composite_scores, DOMAIN_MAP, DOMAIN_WEIGHTS
-from urine_dataframes import organize_urine_df, process_urine_df
+from observations.urine.composite_score  import calculate_composite_scores, DOMAIN_MAP, DOMAIN_WEIGHTS
+from observations.urine.urine_dataframes import organize_urine_df, process_urine_df
 
 # ── Domain configuration ────────────────────────────────────────────────────────
 CANONICAL_DOMAINS = ['immune_regulation', 'inflammation', 'oxidative_stress',
