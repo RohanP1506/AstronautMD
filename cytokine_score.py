@@ -9,7 +9,7 @@ import pandas as pd
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 'observations', 'cytokine'))
 
-from cytokine_dataframe import (
+from observations.cytokine.cytokine_dataframe import (
     organize_df, process_cytokine_df, score, set_marker_weights
 )
 
